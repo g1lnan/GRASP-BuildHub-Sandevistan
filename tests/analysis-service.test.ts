@@ -165,6 +165,15 @@ const okProbeModel: ProbeModel = {
   async scoreFragility(): Promise<FragilityResult> {
     return fragilityResult
   },
+  async scoreFragilityWithEssay(probeTexts: readonly string[]): Promise<FragilityResult> {
+    return {
+      fragility: probeTexts.map(() => 0.5),
+      provider: 'groq',
+      model: 'openai/gpt-oss-120b',
+      promptVersion: 'fre-v1',
+      tokens: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 },
+    }
+  },
 }
 
 describe('analyzeSubmission', () => {
@@ -185,8 +194,8 @@ describe('analyzeSubmission', () => {
     })
 
     expect(submissions.statuses.map((s) => s.status)).toEqual(['analysing', 'ready'])
-    // FR-505: one usage_event per model call — graph, probe_gen, fragility.
-    expect(usage.rows.map((r) => r.stage)).toEqual(['claim_graph', 'probe_gen', 'fragility'])
+    // FR-505: one usage_event per model call — graph, probe_gen, fragility, fragility_with_essay.
+    expect(usage.rows.map((r) => r.stage)).toEqual(['claim_graph', 'probe_gen', 'fragility', 'fragility_with_essay'])
     // All candidates persisted; exactly probeCount selected.
     expect(probes.saved).toHaveLength(6)
     expect(result.selectedCount).toBe(5)
@@ -246,6 +255,15 @@ describe('analyzeSubmission', () => {
       },
       async scoreFragility(): Promise<FragilityResult> {
         return fragilityResult
+      },
+      async scoreFragilityWithEssay(probeTexts: readonly string[]): Promise<FragilityResult> {
+        return {
+          fragility: probeTexts.map(() => 0.5),
+          provider: 'groq',
+          model: 'openai/gpt-oss-120b',
+          promptVersion: 'fre-v1',
+          tokens: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 },
+        }
       },
     }
 

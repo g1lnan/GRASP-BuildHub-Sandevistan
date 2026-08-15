@@ -25,9 +25,12 @@ import type {
   SessionStatus,
   SessionTurn,
 } from '@/lib/session/runtime'
-import { and, asc, desc, eq, isNotNull, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNotNull, isNull, lte, or, sql } from 'drizzle-orm'
 
-async function selectedProbes(claimGraphId: string): Promise<readonly SessionProbe[]> {
+async function selectedProbes(
+  claimGraphId: string,
+  sessionId?: string,
+): Promise<readonly SessionProbe[]> {
   const graphRows = await db
     .select({ nodes: claimGraphs.nodes })
     .from(claimGraphs)
@@ -37,6 +40,11 @@ async function selectedProbes(claimGraphId: string): Promise<readonly SessionPro
   if (graph === undefined) return []
 
   const claimText = new Map(graph.nodes.map((node) => [node.id, node.text]))
+  const baseCondition = and(eq(probes.claimGraphId, claimGraphId), eq(probes.selected, true))
+  const condition = sessionId
+    ? or(baseCondition, and(eq(probes.sessionId, sessionId), isNotNull(probes.followUpOfProbeId)))
+    : baseCondition
+
   const rows = await db
     .select({
       id: probes.id,
@@ -45,8 +53,11 @@ async function selectedProbes(claimGraphId: string): Promise<readonly SessionPro
       claimNodeId: probes.claimNodeId,
     })
     .from(probes)
-    .where(and(eq(probes.claimGraphId, claimGraphId), eq(probes.selected, true)))
-    .orderBy(asc(probes.ordinal))
+    .where(condition)
+    .orderBy(
+      asc(probes.ordinal),
+      asc(sql`CASE WHEN ${probes.followUpOfProbeId} IS NULL THEN 0 ELSE 1 END`),
+    )
 
   return rows.map((row) => {
     const referencedClaim = claimText.get(row.claimNodeId)
@@ -104,12 +115,13 @@ async function findById(sessionId: string): Promise<SessionRecord | null> {
   if (row === undefined) return null
 
   const [probeRows, turnRows] = await Promise.all([
-    selectedProbes(row.claimGraphId),
+    selectedProbes(row.claimGraphId, row.id),
     sessionTurns(row.id),
   ])
   return {
     id: row.id,
     submissionId: row.submissionId,
+    claimGraphId: row.claimGraphId,
     studentId: row.studentId,
     institutionId: row.institutionId,
     mode: row.mode as SessionRecord['mode'],
@@ -271,6 +283,10 @@ export const drizzleSessionRepository: SessionRepository = {
       })
       .where(eq(sessions.id, input.sessionId))
   },
+
+  insertFollowUpProbe,
+  isProbeFollowUpEligible,
+  countSessionFollowUps,
 }
 
 /** Cron-owned FR-305 enforcement for sessions whose clients disconnect at the cap. */
@@ -311,4 +327,108 @@ export async function deleteExpiredAudio(now: Date, retentionHours: number): Pro
     )
     .returning({ id: turns.id })
   return deleted.length
+}
+
+export async function mergeIntegritySignals(
+  sessionId: string,
+  studentId: string,
+  incoming: Record<string, unknown>,
+): Promise<void> {
+  const row = await db
+    .select({ studentId: sessions.studentId })
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .limit(1)
+  const session = row[0]
+  if (session === undefined || session.studentId !== studentId) return
+
+  await db
+    .update(sessions)
+    .set({
+      integritySignals: sql`COALESCE(${sessions.integritySignals}, '{}'::jsonb) || ${JSON.stringify(incoming)}::jsonb`,
+    })
+    .where(eq(sessions.id, sessionId))
+}
+
+export async function getIntegritySignals(sessionId: string): Promise<Record<string, unknown>> {
+  const row = await db
+    .select({ integritySignals: sessions.integritySignals })
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .limit(1)
+  return (row[0]?.integritySignals ?? {}) as Record<string, unknown>
+}
+
+export async function insertFollowUpProbe(input: {
+  readonly claimGraphId: string
+  readonly sessionId: string
+  readonly followUpOfProbeId: string
+  readonly claimNodeId: string
+  readonly textVi: string
+}): Promise<{
+  readonly id: string
+  readonly ordinal: number
+  readonly textVi: string
+  readonly claimText: string
+}> {
+  const parentRow = await db
+    .select({ ordinal: probes.ordinal, claimNodeId: probes.claimNodeId })
+    .from(probes)
+    .where(eq(probes.id, input.followUpOfProbeId))
+    .limit(1)
+  const parent = parentRow[0]
+  if (parent === undefined) throw new Error('Parent probe not found')
+
+  const graphRow = await db
+    .select({ nodes: claimGraphs.nodes })
+    .from(claimGraphs)
+    .where(eq(claimGraphs.id, input.claimGraphId))
+    .limit(1)
+  const nodes = graphRow[0]?.nodes as Array<{ id: string; text: string }> | undefined
+  const claimText = nodes?.find((n) => n.id === input.claimNodeId)?.text ?? ''
+
+  const [inserted] = await db
+    .insert(probes)
+    .values({
+      claimGraphId: input.claimGraphId,
+      claimNodeId: input.claimNodeId,
+      ordinal: parent.ordinal,
+      probeType: 'trace_own_step',
+      bloomLevel: 'reflect',
+      textVi: input.textVi,
+      expectedSignals: [],
+      aiFragilityScore: null,
+      aiFragilityWithEssayScore: null,
+      selected: false,
+      followUpEligible: false,
+      followUpOfProbeId: input.followUpOfProbeId,
+      sessionId: input.sessionId,
+    })
+    .returning({ id: probes.id })
+
+  if (inserted === undefined) throw new Error('Failed to insert follow-up probe')
+
+  return {
+    id: inserted.id,
+    ordinal: parent.ordinal,
+    textVi: input.textVi,
+    claimText,
+  }
+}
+
+export async function isProbeFollowUpEligible(probeId: string): Promise<boolean> {
+  const row = await db
+    .select({ followUpEligible: probes.followUpEligible })
+    .from(probes)
+    .where(eq(probes.id, probeId))
+    .limit(1)
+  return row[0]?.followUpEligible ?? false
+}
+
+export async function countSessionFollowUps(sessionId: string): Promise<number> {
+  const row = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(probes)
+    .where(and(eq(probes.sessionId, sessionId), isNotNull(probes.followUpOfProbeId)))
+  return row[0]?.count ?? 0
 }

@@ -22,6 +22,7 @@ export type Rankable = {
   readonly claimNodeId: string
   readonly bloomLevel: BloomLevel
   readonly fragility: number
+  readonly fragilityWithEssay?: number
 }
 
 export type ProbeDecision = {
@@ -36,6 +37,7 @@ export type SelectionResult = {
   readonly distinctNodes: number
   readonly distinctBlooms: number
   readonly averageFragility: number
+  readonly followUpEligibleIndices: readonly number[]
 }
 
 function bloomRank(level: BloomLevel): number {
@@ -44,10 +46,15 @@ function bloomRank(level: BloomLevel): number {
 }
 
 export function selectProbes(candidates: readonly Rankable[], count: number): SelectionResult {
-  const indexed = candidates.map((c, index) => ({ ...c, index }))
+  const indexed = candidates.map((c, index) => {
+    const effectiveFragility = Math.min(c.fragility, c.fragilityWithEssay ?? c.fragility)
+    return { ...c, index, effectiveFragility }
+  })
   const target = Math.max(0, Math.min(count, indexed.length))
 
-  const byFragility = [...indexed].sort((a, b) => b.fragility - a.fragility || a.index - b.index)
+  const byFragility = [...indexed].sort(
+    (a, b) => b.effectiveFragility - a.effectiveFragility || a.index - b.index,
+  )
 
   const needNodes = Math.min(MIN_DISTINCT_NODES, new Set(candidates.map((c) => c.claimNodeId)).size)
   const needBlooms = Math.min(
@@ -98,7 +105,11 @@ export function selectProbes(candidates: readonly Rankable[], count: number): Se
   // Presentation order: escalate by Bloom level, then by fragility.
   const selectedOrdered = indexed
     .filter((c) => chosen.has(c.index))
-    .sort((a, b) => bloomRank(a.bloomLevel) - bloomRank(b.bloomLevel) || b.fragility - a.fragility)
+    .sort(
+      (a, b) =>
+        bloomRank(a.bloomLevel) - bloomRank(b.bloomLevel) ||
+        b.effectiveFragility - a.effectiveFragility,
+    )
 
   const ordinalByIndex = new Map<number, number>()
   selectedOrdered.forEach((c, i) => ordinalByIndex.set(c.index, i + 1))
@@ -107,19 +118,29 @@ export function selectProbes(candidates: readonly Rankable[], count: number): Se
     index: c.index,
     selected: chosen.has(c.index),
     ordinal: ordinalByIndex.get(c.index) ?? 0,
-    fragility: c.fragility,
+    fragility: c.effectiveFragility,
   }))
 
-  const selectedFragility = selectedOrdered.map((c) => c.fragility)
+  const selectedFragility = selectedOrdered.map((c) => c.effectiveFragility)
   const averageFragility =
     selectedFragility.length === 0
       ? 0
       : selectedFragility.reduce((sum, f) => sum + f, 0) / selectedFragility.length
+
+  const followUpEligibleIndices = [...selectedOrdered]
+    .filter((c) => c.fragilityWithEssay !== undefined)
+    .sort(
+      (a, b) =>
+        (a.fragilityWithEssay as number) - (b.fragilityWithEssay as number) || a.index - b.index,
+    )
+    .slice(0, 2)
+    .map((c) => c.index)
 
   return {
     decisions,
     distinctNodes: nodes.size,
     distinctBlooms: blooms.size,
     averageFragility,
+    followUpEligibleIndices,
   }
 }

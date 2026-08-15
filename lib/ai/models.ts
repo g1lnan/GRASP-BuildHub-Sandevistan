@@ -15,6 +15,7 @@ export const GROQ_MODELS = {
   fragilityAdversary: 'openai/gpt-oss-120b', // strongest available = an honest adversary
   turnTriage: 'openai/gpt-oss-20b',
   feedback: 'openai/gpt-oss-20b',
+  followUp: 'openai/gpt-oss-20b', // fast inline follow-up generation
 } as const
 
 export type GroqModelId = (typeof GROQ_MODELS)[keyof typeof GROQ_MODELS]

@@ -15,7 +15,9 @@ export type ProbeRow = {
   readonly textVi: string
   readonly expectedSignals: readonly string[]
   readonly aiFragilityScore: number | null
+  readonly aiFragilityWithEssayScore: number | null
   readonly selected: boolean
+  readonly followUpEligible: boolean
 }
 
 export const drizzleProbeRepository: ProbeRepository = {
@@ -31,7 +33,9 @@ export const drizzleProbeRepository: ProbeRepository = {
         textVi: p.textVi,
         expectedSignals: p.expectedSignals,
         aiFragilityScore: p.aiFragilityScore.toString(),
+        aiFragilityWithEssayScore: p.aiFragilityWithEssayScore.toString(),
         selected: p.selected,
+        followUpEligible: p.followUpEligible,
       })),
     )
   },
@@ -49,7 +53,9 @@ export async function listProbesByClaimGraph(claimGraphId: string): Promise<read
       textVi: probes.textVi,
       expectedSignals: probes.expectedSignals,
       aiFragilityScore: probes.aiFragilityScore,
+      aiFragilityWithEssayScore: probes.aiFragilityWithEssayScore,
       selected: probes.selected,
+      followUpEligible: probes.followUpEligible,
     })
     .from(probes)
     .where(eq(probes.claimGraphId, claimGraphId))
@@ -63,6 +69,9 @@ export async function listProbesByClaimGraph(claimGraphId: string): Promise<read
     textVi: r.textVi,
     expectedSignals: r.expectedSignals,
     aiFragilityScore: r.aiFragilityScore === null ? null : Number(r.aiFragilityScore),
+    aiFragilityWithEssayScore:
+      r.aiFragilityWithEssayScore === null ? null : Number(r.aiFragilityWithEssayScore),
     selected: r.selected,
+    followUpEligible: r.followUpEligible ?? false,
   }))
 }

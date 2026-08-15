@@ -1,3 +1,4 @@
+import { anthropicFollowUpModel } from '@/lib/ai/follow-up'
 import { createASRProvider } from '@/lib/asr/factory'
 import { ASR_MAX_FILE_BYTES, isSupportedAudioMimeType } from '@/lib/asr/types'
 import {
@@ -57,6 +58,7 @@ export async function POST(
         audio: Buffer.from(await audio.arrayBuffer()),
         mimeType: audio.type,
         durationMs: input.durationMs,
+        followUpModel: anthropicFollowUpModel(),
       })
       return NextResponse.json(
         {
@@ -81,6 +83,7 @@ export async function POST(
         probeId: input.probeId,
         text: input.text,
         now: new Date(),
+        followUpModel: anthropicFollowUpModel(),
       }),
       { status: 200 },
     )

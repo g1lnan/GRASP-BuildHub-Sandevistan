@@ -13,9 +13,11 @@ import Anthropic from '@anthropic-ai/sdk'
 export const MODELS = {
   claimGraph: 'claude-opus-4-8', // quality determines whether a lecturer trusts us
   probeGen: 'claude-opus-4-8', // AI-fragility is the whole product
+  fragilityAdversary: 'claude-opus-4-8', // adversarial scoring must match probe quality
   finalScore: 'claude-opus-4-8', // the number a grade depends on
-  turnTriage: 'claude-haiku-4-5', // high volume, low stakes, discarded after routing
-  feedback: 'claude-haiku-4-5', // helpful != hard
+  turnTriage: 'claude-sonnet-5', // high volume, low stakes, discarded after routing
+  feedback: 'claude-sonnet-5', // helpful != hard
+  followUp: 'claude-haiku-4-5', // NEW: fast inline follow-up generation
 } as const
 
 export type ModelId = (typeof MODELS)[keyof typeof MODELS]

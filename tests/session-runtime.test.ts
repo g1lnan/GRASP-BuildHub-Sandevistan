@@ -61,6 +61,7 @@ function session(overrides: Partial<SessionRecord> = {}): SessionRecord {
   return {
     id: sessionId,
     submissionId,
+    claimGraphId,
     studentId: studentAId,
     institutionId,
     mode: 'typed',
@@ -156,6 +157,23 @@ class SessionRepositoryFake implements SessionRepository {
   }): Promise<void> {
     this.stateUpdates.push(input)
     if (this.record !== null) this.record = { ...this.record, ...input }
+  }
+
+  async insertFollowUpProbe(): Promise<{
+    readonly id: string
+    readonly ordinal: number
+    readonly textVi: string
+    readonly claimText: string
+  }> {
+    return { id: 'follow-up-probe-id', ordinal: 99, textVi: 'Follow-up question', claimText: '' }
+  }
+
+  async isProbeFollowUpEligible(): Promise<boolean> {
+    return false
+  }
+
+  async countSessionFollowUps(): Promise<number> {
+    return 0
   }
 }
 

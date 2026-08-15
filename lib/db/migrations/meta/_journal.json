@@ -36,6 +36,13 @@
       "when": 1785028670410,
       "tag": "0004_loose_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786825100549,
+      "tag": "0005_rich_cammi",
+      "breakpoints": true
     }
   ]
 }

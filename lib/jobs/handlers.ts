@@ -1,7 +1,7 @@
 import 'server-only'
 
-import { groqClaimGraphModel } from '@/lib/ai/claimgraph'
-import { groqProbeModel } from '@/lib/ai/probes'
+import { anthropicClaimGraphModel } from '@/lib/ai/claimgraph'
+import { anthropicProbeModel } from '@/lib/ai/probes'
 import { drizzleClaimGraphRepository } from '@/lib/repositories/drizzle-claim-graphs'
 import { drizzleProbeRepository } from '@/lib/repositories/drizzle-probes'
 import { drizzleAnalysisSubmissionRepository } from '@/lib/repositories/drizzle-submissions'
@@ -17,7 +17,7 @@ function requireSubmissionId(payload: JobPayload): string {
   return value
 }
 
-/** Production handler wiring: real repositories + the Groq-backed models. */
+/** Production handler wiring: real repositories + the Anthropic-backed models. */
 export const jobHandlers: JobHandlers = {
   analyze_submission: async (payload) => {
     await analyzeSubmission({
@@ -25,8 +25,8 @@ export const jobHandlers: JobHandlers = {
       claimGraphs: drizzleClaimGraphRepository,
       probes: drizzleProbeRepository,
       usage: drizzleUsageRepository,
-      claimGraphModel: groqClaimGraphModel(),
-      probeModel: groqProbeModel(),
+      claimGraphModel: anthropicClaimGraphModel(),
+      probeModel: anthropicProbeModel(),
       submissionId: requireSubmissionId(payload),
     })
   },

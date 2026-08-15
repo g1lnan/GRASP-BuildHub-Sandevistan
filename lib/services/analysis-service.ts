@@ -48,7 +48,9 @@ export type NewProbe = {
   readonly textVi: string
   readonly expectedSignals: readonly string[]
   readonly aiFragilityScore: number
+  readonly aiFragilityWithEssayScore: number
   readonly selected: boolean
+  readonly followUpEligible: boolean
 }
 
 export type AnalysisSubmission = {
@@ -156,18 +158,34 @@ export async function analyzeSubmission(request: {
       submissionId: submission.id,
     })
 
+    // 3b. AI-fragility scoring WITH essay context
+    const fragilityWithEssay = await request.probeModel.scoreFragilityWithEssay(
+      gen.candidates.map((c) => c.text_vi),
+      submission.extractedText,
+    )
+    await recordModelUsage({
+      usage: request.usage,
+      stage: 'fragility_with_essay',
+      model: fragilityWithEssay.model,
+      provider: fragilityWithEssay.provider,
+      tokens: fragilityWithEssay.tokens,
+      submissionId: submission.id,
+    })
+
     // 4. Rank by fragility x coverage, select N (FR-204)
     const selection = selectProbes(
       gen.candidates.map((c, i) => ({
         claimNodeId: c.claim_node_id,
         bloomLevel: c.bloom_level,
         fragility: frag.fragility[i] ?? 0,
+        fragilityWithEssay: fragilityWithEssay.fragility[i] ?? 0,
       })),
       submission.probeCount,
     )
 
     const probes: NewProbe[] = gen.candidates.map((c, i) => {
       const decision = selection.decisions[i]
+      const withEssayScore = fragilityWithEssay.fragility[i] ?? 0
       return {
         claimGraphId: claimGraph.id,
         claimNodeId: c.claim_node_id,
@@ -176,8 +194,10 @@ export async function analyzeSubmission(request: {
         bloomLevel: c.bloom_level,
         textVi: c.text_vi,
         expectedSignals: c.expected_signals,
-        aiFragilityScore: decision?.fragility ?? 0,
+        aiFragilityScore: frag.fragility[i] ?? 0,
+        aiFragilityWithEssayScore: withEssayScore,
         selected: decision?.selected ?? false,
+        followUpEligible: selection.followUpEligibleIndices.includes(i),
       }
     })
     await request.probes.createMany(probes)

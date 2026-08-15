@@ -1,5 +1,5 @@
-import { GroqFeedbackModel } from '@/lib/ai/feedback'
-import { GroqScoringModel } from '@/lib/ai/scoring'
+import { AnthropicFeedbackModel } from '@/lib/ai/feedback'
+import { AnthropicScoringModel } from '@/lib/ai/scoring'
 import {
   AuthenticationRequiredError,
   AuthorizationDeniedError,
@@ -8,6 +8,7 @@ import {
 import { vi } from '@/lib/i18n/vi'
 import { drizzleFeedbackRepository } from '@/lib/repositories/drizzle-feedback'
 import { drizzleScoreRepository } from '@/lib/repositories/drizzle-scores'
+import { getIntegritySignals, mergeIntegritySignals } from '@/lib/repositories/drizzle-sessions'
 import { drizzleUsageRepository } from '@/lib/repositories/drizzle-usage'
 import {
   AuthenticationRoleError,
@@ -36,14 +37,18 @@ export async function POST(_request: Request, context: { params: Promise<{ sessi
     const score = await finalizeSessionScore({
       scores: drizzleScoreRepository,
       usage: drizzleUsageRepository,
-      model: new GroqScoringModel(),
+      model: new AnthropicScoringModel(),
       actor,
       sessionId,
+      getIntegritySignals,
+      mergeIntegritySignals: async (sid, _studentId, signals) => {
+        await mergeIntegritySignals(sid, actor.id, signals as Record<string, unknown>)
+      },
     })
     const feedback = await finalizeSessionFeedback({
       reports: drizzleFeedbackRepository,
       usage: drizzleUsageRepository,
-      model: new GroqFeedbackModel(),
+      model: new AnthropicFeedbackModel(),
       actor,
       sessionId,
     })

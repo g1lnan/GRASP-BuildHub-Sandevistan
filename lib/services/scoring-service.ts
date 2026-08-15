@@ -2,12 +2,14 @@ import type { ScoringOutput } from '@/lib/ai/scoring-schemas'
 import type { ScoringModel, ScoringTurnInput } from '@/lib/ai/scoring-types'
 import { ScoringModelError } from '@/lib/ai/scoring-types'
 import type { Actor } from '@/lib/auth/identity'
+import type { IntegritySignals } from '@/lib/domain/integrity-signals'
 import {
   citationsMatchTranscripts,
   compositeScore,
   confidenceInterval,
   normalizeRubricWeights,
 } from '@/lib/domain/scoring'
+import { analyzeResponseTiming } from '@/lib/domain/timing-analysis'
 import { vi } from '@/lib/i18n/vi'
 import type { ScoreView } from '@/lib/scoring/schemas'
 import type { TokenUsage } from '@/lib/usage/pricing'
@@ -104,6 +106,12 @@ type FinalizeScoreRequest = {
   readonly actor: Actor
   readonly sessionId: string
   readonly retryDelay?: (milliseconds: number) => Promise<void>
+  readonly getIntegritySignals?: (sessionId: string) => Promise<Record<string, unknown>>
+  readonly mergeIntegritySignals?: (
+    sessionId: string,
+    studentId: string,
+    signals: Record<string, unknown>,
+  ) => Promise<void>
 }
 
 async function finalizeAuthorizedSession(
@@ -121,6 +129,42 @@ async function finalizeAuthorizedSession(
   const retryDelay =
     request.retryDelay ??
     ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)))
+
+  // Run timing analysis before scoring (Layer 4)
+  let _behavioralContext:
+    | { suspicionLevel: string; signals: readonly { type: string; detail: string }[] }
+    | undefined
+  if (request.getIntegritySignals !== undefined) {
+    try {
+      const clientSignals = (await request.getIntegritySignals(context.sessionId)) as
+        | IntegritySignals
+        | undefined
+      const timingResult = analyzeResponseTiming(
+        context.turns.map((t) => ({
+          ordinal: t.ordinal,
+          inputMode: t.inputMode,
+          transcript: t.transcript,
+          latencyMs: null,
+          durationMs: 0,
+        })),
+        clientSignals ?? undefined,
+      )
+      if (timingResult.signals.length > 0 && request.mergeIntegritySignals !== undefined) {
+        await request.mergeIntegritySignals(context.sessionId, context.studentId, {
+          timingAnalysis: timingResult,
+        })
+      }
+      if (timingResult.overallSuspicionLevel !== 'none') {
+        _behavioralContext = {
+          suspicionLevel: timingResult.overallSuspicionLevel,
+          signals: timingResult.signals.map((s) => ({ type: s.type, detail: s.detail })),
+        }
+      }
+    } catch {
+      // Timing analysis failure is non-fatal
+    }
+  }
+
   let lastError: unknown
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (attempt > 0) await retryDelay(attempt === 1 ? 100 : 300)

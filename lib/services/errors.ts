@@ -117,3 +117,7 @@ export class AppealNotAllowedError extends Error {
 export class InvalidAppealError extends Error {
   readonly name = 'InvalidAppealError'
 }
+
+export class FollowUpGenerationError extends Error {
+  readonly name = 'FollowUpGenerationError'
+}

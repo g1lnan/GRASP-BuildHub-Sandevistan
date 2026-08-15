@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -65,6 +66,10 @@ export const probes = pgTable(
     expectedSignals: jsonb('expected_signals').$type<readonly string[]>().notNull(),
     aiFragilityScore: numeric('ai_fragility_score'),
     selected: boolean('selected').notNull().default(false),
+    aiFragilityWithEssayScore: numeric('ai_fragility_with_essay_score'),
+    followUpEligible: boolean('follow_up_eligible').notNull().default(false),
+    followUpOfProbeId: uuid('follow_up_of_probe_id'),
+    sessionId: uuid('session_id'),
     ...timestamps(),
   },
   (table) => [
@@ -78,5 +83,6 @@ export const probes = pgTable(
       'ck_probes_bloom_level',
       sql`${table.bloomLevel} in ('understand', 'apply', 'analyse', 'evaluate', 'reflect')`,
     ),
+    foreignKey({ columns: [table.followUpOfProbeId], foreignColumns: [table.id] }),
   ],
 )

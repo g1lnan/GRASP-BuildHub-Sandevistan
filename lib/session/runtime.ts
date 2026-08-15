@@ -1,7 +1,10 @@
+import type { FollowUpModel } from '@/lib/ai/follow-up'
 import { audioDurationSeconds } from '@/lib/asr/audio-duration'
 import { transcribeWithTimeout } from '@/lib/asr/transcribe'
 import { type ASRProvider, ASR_MAX_DURATION_MS, ASR_MAX_FILE_BYTES } from '@/lib/asr/types'
 import type { Actor } from '@/lib/auth/identity'
+
+export const MAX_FOLLOW_UPS_PER_SESSION = 2
 import {
   AsrNoSpeechError,
   AuthenticationRoleError,
@@ -57,6 +60,7 @@ export type SessionStartContext = {
 export type SessionRecord = {
   readonly id: string
   readonly submissionId: string
+  readonly claimGraphId: string
   readonly studentId: string
   readonly institutionId: string
   readonly mode: SessionMode
@@ -114,6 +118,15 @@ export interface SessionRepository {
   findById(sessionId: string): Promise<SessionRecord | null>
   appendTurn(input: NewTurn): Promise<AppendTurnResult>
   updateState(input: SessionStateUpdate): Promise<void>
+  insertFollowUpProbe(input: {
+    readonly claimGraphId: string
+    readonly sessionId: string
+    readonly followUpOfProbeId: string
+    readonly claimNodeId: string
+    readonly textVi: string
+  }): Promise<SessionProbe>
+  isProbeFollowUpEligible(probeId: string): Promise<boolean>
+  countSessionFollowUps(sessionId: string): Promise<number>
 }
 
 function elapsedSeconds(record: SessionRecord, now: Date): number {
@@ -232,6 +245,7 @@ export async function submitTypedTurn(request: {
   readonly probeId: string
   readonly text: string
   readonly now: Date
+  readonly followUpModel?: FollowUpModel
 }): Promise<SessionView> {
   const record = await request.sessions.findById(request.sessionId)
   if (record === null) throw new ResourceNotFoundError()
@@ -268,25 +282,36 @@ export async function submitTypedTurn(request: {
     return viewOf(await synchroniseTerminalState(request.sessions, latest, request.now))
   }
 
-  const updated: SessionRecord = {
-    ...current,
-    elapsedSeconds: elapsed,
-    turns: [
-      ...current.turns,
-      {
-        id: '',
-        probeId: probe.id,
-        ordinal: current.turns.length + 1,
-        inputMode: 'typed',
-        transcript,
-        asrConfidence: null,
-        latencyMs: null,
-        durationMs: Math.max(0, request.now.getTime() - previousTimestamp),
-        createdAt: request.now,
-      },
-    ],
+  // --- Follow-up probe injection (Layer 3) ---
+  if (request.followUpModel !== undefined) {
+    try {
+      const eligible = await request.sessions.isProbeFollowUpEligible(probe.id)
+      if (eligible) {
+        const followUpCount = await request.sessions.countSessionFollowUps(current.id)
+        if (followUpCount < MAX_FOLLOW_UPS_PER_SESSION) {
+          const followUp = await request.followUpModel.generateFollowUp({
+            originalProbeText: probe.textVi,
+            studentAnswer: transcript,
+            claimText: probe.claimText,
+          })
+          await request.sessions.insertFollowUpProbe({
+            claimGraphId: current.claimGraphId,
+            sessionId: current.id,
+            followUpOfProbeId: probe.id,
+            claimNodeId: '', // The repo will look this up from the parent
+            textVi: followUp.textVi,
+          })
+        }
+      }
+    } catch {
+      // Follow-up generation failure is non-fatal; defense continues
+    }
   }
-  const finalState = await synchroniseTerminalState(request.sessions, updated, request.now)
+
+  // Re-fetch to include any dynamically inserted follow-up probes
+  const refreshed = await request.sessions.findById(current.id)
+  if (refreshed === null) throw new ResourceNotFoundError()
+  const finalState = await synchroniseTerminalState(request.sessions, refreshed, request.now)
   return viewOf(finalState)
 }
 
@@ -302,6 +327,7 @@ export async function submitVoiceTurn(request: {
   readonly durationMs: number
   readonly now?: () => Date
   readonly measureAudioDuration?: (audio: Buffer, mimeType: string) => number
+  readonly followUpModel?: FollowUpModel
 }): Promise<SubmittedVoiceTurn> {
   if (
     request.audio.length === 0 ||
@@ -415,26 +441,38 @@ export async function submitVoiceTurn(request: {
     }
   }
 
-  const updated: SessionRecord = {
-    ...latest,
-    elapsedSeconds: elapsed,
-    turns: [
-      ...latest.turns,
-      {
-        id: '',
-        probeId: probe.id,
-        ordinal: latest.turns.length + 1,
-        inputMode: 'voice',
-        transcript: result.transcript,
-        asrConfidence: result.confidence,
-        latencyMs,
-        durationMs: Math.max(1, Math.round(audioSeconds * 1000)),
-        createdAt: completedAt,
-      },
-    ],
+  // --- Follow-up probe injection (Layer 3) ---
+  if (request.followUpModel !== undefined) {
+    try {
+      const eligible = await request.sessions.isProbeFollowUpEligible(probe.id)
+      if (eligible) {
+        const followUpCount = await request.sessions.countSessionFollowUps(latest.id)
+        if (followUpCount < MAX_FOLLOW_UPS_PER_SESSION) {
+          const followUp = await request.followUpModel.generateFollowUp({
+            originalProbeText: probe.textVi,
+            studentAnswer: result.transcript,
+            claimText: probe.claimText,
+          })
+          await request.sessions.insertFollowUpProbe({
+            claimGraphId: latest.claimGraphId,
+            sessionId: latest.id,
+            followUpOfProbeId: probe.id,
+            claimNodeId: '', // The repo will look this up from the parent
+            textVi: followUp.textVi,
+          })
+        }
+      }
+    } catch {
+      // Follow-up generation failure is non-fatal; defense continues
+    }
   }
+
+  // Re-fetch to include any dynamically inserted follow-up probes
+  const refreshed = await request.sessions.findById(latest.id)
+  if (refreshed === null) throw new ResourceNotFoundError()
+  const finalState = await synchroniseTerminalState(request.sessions, refreshed, completedAt)
   return {
-    session: viewOf(await synchroniseTerminalState(request.sessions, updated, completedAt)),
+    session: viewOf(finalState),
     transcript: result.transcript,
     asrConfidence: result.confidence,
     persisted: true,

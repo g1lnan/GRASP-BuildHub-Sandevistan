@@ -1,10 +1,15 @@
 import { scoreDimensionKeys } from '@/lib/ai/scoring-schemas'
 import { requireRolePage } from '@/lib/auth/guards'
+import { db } from '@/lib/db'
+import { probes as probesTable, sessions as sessionsTable } from '@/lib/db/schema'
 import { type Quadrant, quadrantOf } from '@/lib/domain/quadrant'
 import { vi } from '@/lib/i18n/vi'
 import { getEvidenceBundle } from '@/lib/repositories/drizzle-outcomes'
+import { getIntegritySignals } from '@/lib/repositories/drizzle-sessions'
+import { asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { IntegrityPanel } from './IntegrityPanel'
 import { OverrideControl } from './OverrideControl'
 import { ProductScoreControl } from './ProductScoreControl'
 
@@ -31,6 +36,30 @@ export default async function EvidenceBundlePage({ params }: Props) {
   ) {
     notFound()
   }
+
+  const sessionRow = await db
+    .select({ claimGraphId: sessionsTable.claimGraphId })
+    .from(sessionsTable)
+    .where(eq(sessionsTable.id, sessionId))
+    .limit(1)
+  const claimGraphId = sessionRow[0]?.claimGraphId
+
+  const [integritySignals, probeRows] = await Promise.all([
+    getIntegritySignals(sessionId),
+    claimGraphId !== undefined
+      ? db
+          .select({
+            textVi: probesTable.textVi,
+            aiFragilityScore: probesTable.aiFragilityScore,
+            aiFragilityWithEssayScore: probesTable.aiFragilityWithEssayScore,
+            followUpEligible: probesTable.followUpEligible,
+            followUpOfProbeId: probesTable.followUpOfProbeId,
+          })
+          .from(probesTable)
+          .where(eq(probesTable.claimGraphId, claimGraphId))
+          .orderBy(asc(probesTable.ordinal))
+      : Promise.resolve([]),
+  ])
 
   const { score, override, submission } = bundle
   const understanding = score === null ? null : score.composite
@@ -197,6 +226,18 @@ export default async function EvidenceBundlePage({ params }: Props) {
               ))}
             </div>
           </div>
+
+          <IntegrityPanel
+            integritySignals={integritySignals}
+            probes={probeRows.map((p) => ({
+              textVi: p.textVi,
+              aiFragilityScore: p.aiFragilityScore !== null ? Number(p.aiFragilityScore) : null,
+              aiFragilityWithEssayScore:
+                p.aiFragilityWithEssayScore !== null ? Number(p.aiFragilityWithEssayScore) : null,
+              followUpEligible: p.followUpEligible,
+              isFollowUp: p.followUpOfProbeId !== null,
+            }))}
+          />
 
           <details>
             <summary

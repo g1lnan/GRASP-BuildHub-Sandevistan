@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { AppealForm } from './AppealForm'
 import { VoiceAnswer } from './VoiceAnswer'
+import { useIntegritySignals } from './useIntegritySignals'
 
 function secondsUntil(deadlineAt: string): number {
   return Math.max(0, Math.ceil((new Date(deadlineAt).getTime() - Date.now()) / 1000))
@@ -236,11 +237,18 @@ export function DefenseSession({ initial }: { initial: SessionView }) {
   const [scoring, setScoring] = useState(false)
   const [scoreError, setScoreError] = useState<string | null>(null)
   const [finalizeAttempted, setFinalizeAttempted] = useState(false)
+  const signals = useIntegritySignals(session.id)
 
   useEffect(() => {
     setSession(initial)
     setRemaining(secondsUntil(initial.deadlineAt))
   }, [initial])
+
+  useEffect(() => {
+    if (!session.done && session.currentProbe !== null) {
+      signals.startTurn(session.questionNumber)
+    }
+  }, [session.questionNumber, session.done, session.currentProbe, signals])
 
   useEffect(() => {
     if (session.done) return
@@ -304,6 +312,8 @@ export function DefenseSession({ initial }: { initial: SessionView }) {
         return
       }
       setSession(sessionViewSchema.parse(body))
+      signals.endTurn()
+      void signals.flush()
       setAnswer('')
     } catch {
       setError(vi.errors.serverError)
@@ -338,6 +348,8 @@ export function DefenseSession({ initial }: { initial: SessionView }) {
         transcript: accepted.acceptedTurn.transcript,
         confidence: accepted.acceptedTurn.asrConfidence,
       })
+      signals.endTurn()
+      void signals.flush()
       return accepted.acceptedTurn.persisted
     } catch {
       setError(vi.errors.serverError)
@@ -459,6 +471,10 @@ export function DefenseSession({ initial }: { initial: SessionView }) {
               id="answer"
               value={answer}
               onChange={(event) => setAnswer(event.target.value)}
+              onPaste={(e) =>
+                signals.recordPaste(session.questionNumber, e.clipboardData.getData('text').length)
+              }
+              onKeyDown={() => signals.recordKeystroke()}
               rows={8}
               maxLength={20_000}
               placeholder={vi.defense.answerPlaceholder}

@@ -43,3 +43,16 @@ Return, for each question by its index, an "answerable" score from 0 to 1:
 - values in between for partial dependence.
 
 Be strict: if answering would require knowing what THIS student specifically wrote, chose, or argued, the score is low. Judge every question you are given. Output only the structured object.`
+
+export const FRAGILITY_WITH_ESSAY_PROMPT_VERSION = 'fre-v1'
+
+export const FRAGILITY_WITH_ESSAY_SYSTEM = `You estimate whether oral-defense questions can be answered convincingly by someone who has ACCESS to the student's essay but did NOT write it — for example, by pasting the essay and the question into a general-purpose AI assistant.
+
+You are given the full student submission AND a numbered list of questions. For each question, judge how well someone could answer it by reading the essay and using general reasoning — WITHOUT having actually done the work, made the choices, or gone through the reasoning process themselves.
+
+Return, for each question by its index, an "answerable" score from 0 to 1:
+- 1.0 = fully answerable just by reading the essay text and applying general reasoning. The question only requires comprehension, not authorship experience.
+- 0.0 = impossible to answer well without having genuinely done the work — it probes the reasoning PROCESS, personal choices, rejected alternatives, or metacognitive awareness that are not recoverable from the text alone.
+- values in between for partial dependence.
+
+Be strict: if answering requires only reading comprehension of the text (not authorship experience), the score is high. Judge every question you are given. Output only the structured object.`

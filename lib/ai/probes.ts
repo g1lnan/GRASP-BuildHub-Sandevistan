@@ -1,7 +1,9 @@
 import 'server-only'
 
 import type { TokenUsage } from '@/lib/usage/pricing'
-import { toTokenUsageOpenAI } from '@/lib/usage/pricing'
+import { toTokenUsage, toTokenUsageOpenAI } from '@/lib/usage/pricing'
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
+import { MODELS, anthropic } from './client'
 import { GROQ_MODELS, groq } from './groq-client'
 import {
   FragilityReportSchema,
@@ -13,6 +15,8 @@ import {
 import {
   FRAGILITY_PROMPT_VERSION,
   FRAGILITY_SYSTEM,
+  FRAGILITY_WITH_ESSAY_PROMPT_VERSION,
+  FRAGILITY_WITH_ESSAY_SYSTEM,
   PROBE_GEN_PROMPT_VERSION,
   PROBE_GEN_SYSTEM,
 } from './prompts/probes'
@@ -50,6 +54,11 @@ export interface ProbeModel {
   }): Promise<ProbeGenResult>
   /** Blind-answerability scoring: fragility = 1 - answerable. Input is probe text ONLY. */
   scoreFragility(probeTexts: readonly string[]): Promise<FragilityResult>
+  /** With-essay answerability scoring: can the probe be answered with essay access? */
+  scoreFragilityWithEssay(
+    probeTexts: readonly string[],
+    essayText: string,
+  ): Promise<FragilityResult>
 }
 
 function clamp01(value: number): number {
@@ -168,6 +177,215 @@ export function groqProbeModel(): ProbeModel {
         tokens: response.usage
           ? toTokenUsageOpenAI(response.usage)
           : { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 },
+      }
+    },
+
+    async scoreFragilityWithEssay(probeTexts, essayText): Promise<FragilityResult> {
+      const fragility = new Array<number>(probeTexts.length).fill(0)
+      if (probeTexts.length === 0) {
+        return {
+          fragility,
+          provider: 'groq',
+          model: GROQ_MODELS.fragilityAdversary,
+          promptVersion: FRAGILITY_WITH_ESSAY_PROMPT_VERSION,
+          tokens: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 },
+        }
+      }
+
+      const numbered = probeTexts.map((t, i) => `${i}. ${t}`).join('\n')
+      const response = await groq().chat.completions.create({
+        model: GROQ_MODELS.fragilityAdversary,
+        reasoning_effort: 'high',
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'essay_fragility_report',
+            strict: true,
+            schema: fragilityReportJsonSchema,
+          },
+        },
+        messages: [
+          { role: 'system', content: FRAGILITY_WITH_ESSAY_SYSTEM },
+          { role: 'user', content: `FULL SUBMISSION:\n${essayText}\n\nQuestions:\n${numbered}` },
+        ],
+      })
+
+      const content = response.choices[0]?.message.content
+      if (typeof content !== 'string' || content.length === 0) {
+        throw new ProbeGenerationError('Fragility with essay response was empty')
+      }
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(content)
+      } catch {
+        throw new ProbeGenerationError('Fragility with essay response was not valid JSON')
+      }
+      const report = FragilityReportSchema.safeParse(parsed)
+      if (!report.success)
+        throw new ProbeGenerationError('Fragility with essay report failed schema validation')
+
+      for (const a of report.data.assessments) {
+        if (a.index >= 0 && a.index < fragility.length) {
+          fragility[a.index] = clamp01(1 - clamp01(a.answerable))
+        }
+      }
+
+      return {
+        fragility,
+        provider: 'groq',
+        model: GROQ_MODELS.fragilityAdversary,
+        promptVersion: FRAGILITY_WITH_ESSAY_PROMPT_VERSION,
+        tokens: response.usage
+          ? toTokenUsageOpenAI(response.usage)
+          : { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 },
+      }
+    },
+  }
+}
+
+/**
+ * Anthropic-backed Probe model — production provider (DESIGN §6.2). Uses
+ * `messages.parse` with `zodOutputFormat` for zod/v4 schemas, adaptive
+ * thinking, and cache_control on the frozen system prompt.
+ */
+export function anthropicProbeModel(): ProbeModel {
+  return {
+    async generateProbes(input): Promise<ProbeGenResult> {
+      const response = await anthropic().messages.parse({
+        model: MODELS.probeGen,
+        max_tokens: 8000,
+        thinking: { type: 'adaptive' },
+        output_config: {
+          effort: 'high',
+          format: zodOutputFormat(ProbeSetSchema),
+        },
+        system: [
+          {
+            type: 'text',
+            text: PROBE_GEN_SYSTEM,
+            cache_control: { type: 'ephemeral' },
+          },
+        ],
+        messages: [
+          {
+            role: 'user',
+            content: `${renderGraph(input.graph)}\n\nFULL SUBMISSION:\n${input.submissionText}`,
+          },
+        ],
+      })
+
+      if (response.parsed_output === null) {
+        throw new ProbeGenerationError('Probe generation parse failed')
+      }
+
+      return {
+        candidates: response.parsed_output.probes,
+        provider: 'anthropic',
+        model: MODELS.probeGen,
+        promptVersion: PROBE_GEN_PROMPT_VERSION,
+        tokens: toTokenUsage(response.usage),
+      }
+    },
+
+    async scoreFragility(probeTexts): Promise<FragilityResult> {
+      const fragility = new Array<number>(probeTexts.length).fill(0)
+      if (probeTexts.length === 0) {
+        return {
+          fragility,
+          provider: 'anthropic',
+          model: MODELS.fragilityAdversary,
+          promptVersion: FRAGILITY_PROMPT_VERSION,
+          tokens: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 },
+        }
+      }
+
+      const numbered = probeTexts.map((t, i) => `${i}. ${t}`).join('\n')
+      const response = await anthropic().messages.parse({
+        model: MODELS.fragilityAdversary,
+        max_tokens: 4000,
+        thinking: { type: 'adaptive' },
+        output_config: {
+          effort: 'high',
+          format: zodOutputFormat(FragilityReportSchema),
+        },
+        system: [
+          {
+            type: 'text',
+            text: FRAGILITY_SYSTEM,
+            cache_control: { type: 'ephemeral' },
+          },
+        ],
+        messages: [{ role: 'user', content: `Questions:\n${numbered}` }],
+      })
+
+      if (response.parsed_output === null) {
+        throw new ProbeGenerationError('Fragility parse failed')
+      }
+
+      for (const a of response.parsed_output.assessments) {
+        if (a.index >= 0 && a.index < fragility.length) {
+          fragility[a.index] = clamp01(1 - clamp01(a.answerable))
+        }
+      }
+
+      return {
+        fragility,
+        provider: 'anthropic',
+        model: MODELS.fragilityAdversary,
+        promptVersion: FRAGILITY_PROMPT_VERSION,
+        tokens: toTokenUsage(response.usage),
+      }
+    },
+
+    async scoreFragilityWithEssay(probeTexts, essayText): Promise<FragilityResult> {
+      const fragility = new Array<number>(probeTexts.length).fill(0)
+      if (probeTexts.length === 0) {
+        return {
+          fragility,
+          provider: 'anthropic',
+          model: MODELS.fragilityAdversary,
+          promptVersion: FRAGILITY_WITH_ESSAY_PROMPT_VERSION,
+          tokens: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheCreationTokens: 0 },
+        }
+      }
+
+      const numbered = probeTexts.map((t, i) => `${i}. ${t}`).join('\n')
+      const response = await anthropic().messages.parse({
+        model: MODELS.fragilityAdversary,
+        max_tokens: 4000,
+        thinking: { type: 'adaptive' },
+        output_config: {
+          effort: 'high',
+          format: zodOutputFormat(FragilityReportSchema),
+        },
+        system: [
+          {
+            type: 'text',
+            text: FRAGILITY_WITH_ESSAY_SYSTEM,
+            cache_control: { type: 'ephemeral' },
+          },
+        ],
+        messages: [
+          { role: 'user', content: `FULL SUBMISSION:\n${essayText}\n\nQuestions:\n${numbered}` },
+        ],
+      })
+
+      if (response.parsed_output === null) {
+        throw new ProbeGenerationError('Fragility with essay parse failed')
+      }
+
+      for (const a of response.parsed_output.assessments) {
+        if (a.index >= 0 && a.index < fragility.length) {
+          fragility[a.index] = clamp01(1 - clamp01(a.answerable))
+        }
+      }
+
+      return {
+        fragility,
+        provider: 'anthropic',
+        model: MODELS.fragilityAdversary,
+        promptVersion: FRAGILITY_WITH_ESSAY_PROMPT_VERSION,
+        tokens: toTokenUsage(response.usage),
       }
     },
   }

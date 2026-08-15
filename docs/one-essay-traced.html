@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>One Essay, Traced</title>
+</head>
+<body>
+<style>
+  :root {
+    --paper: #f1f0ea;
+    --paper-raised: #ffffff;
+    --paper-sunken: #e9e7dd;
+    --ink: #1c1e1b;
+    --ink-soft: #55584f;
+    --ink-faint: #8b8d80;
+    --line: #dad8cc;
+    --line-strong: #c3c1b3;
+    --citation: #a5680b;
+    --citation-bg: #f4e3c2;
+    --verify: #1f6753;
+    --verify-bg: #dceae2;
+    --risk: #a6432e;
+    --risk-bg: #f2ddd6;
+    --muted-node: #8b8d80;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #15171b;
+      --paper-raised: #1c1f24;
+      --paper-sunken: #101215;
+      --ink: #ecebe3;
+      --ink-soft: #aeb0a2;
+      --ink-faint: #6d7065;
+      --line: #2c2f2a;
+      --line-strong: #3b3e37;
+      --citation: #e6b458;
+      --citation-bg: #3a2e14;
+      --verify: #5cc4a4;
+      --verify-bg: #163229;
+      --risk: #e08a72;
+      --risk-bg: #3a2019;
+      --muted-node: #6d7065;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #15171b;
+    --paper-raised: #1c1f24;
+    --paper-sunken: #101215;
+    --ink: #ecebe3;
+    --ink-soft: #aeb0a2;
+    --ink-faint: #6d7065;
+    --line: #2c2f2a;
+    --line-strong: #3b3e37;
+    --citation: #e6b458;
+    --citation-bg: #3a2e14;
+    --verify: #5cc4a4;
+    --verify-bg: #163229;
+    --risk: #e08a72;
+    --risk-bg: #3a2019;
+    --muted-node: #6d7065;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 20px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--citation-bg); color: var(--ink); }
+  .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif; }
+  .mono { font-family: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, "Roboto Mono", monospace; }
+
+  .page { max-width: 900px; margin: 0 auto; }
+
+  header.masthead {
+    padding: 64px 0 36px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 48px;
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 20px;
+  }
+  h1.title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: clamp(36px, 5.6vw, 56px);
+    font-weight: 600;
+    line-height: 1.03;
+    margin: 0 0 18px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .dek {
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 64ch;
+    text-wrap: balance;
+    margin: 0 0 24px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+  .meta-row b { color: var(--ink-soft); font-weight: 600; }
+
+  section.chapter { margin-bottom: 68px; }
+  .chapter-head { margin-bottom: 22px; }
+  .section-label {
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--citation);
+    margin-bottom: 8px;
+  }
+  h2.chapter-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 26px;
+    font-weight: 600;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { font-size: 17px; color: var(--ink-soft); max-width: 66ch; margin: 10px 0 0; }
+  p { max-width: 68ch; margin: 0 0 16px; }
+
+  .essay-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 22px 26px;
+    font-size: 15.5px;
+    color: var(--ink-soft);
+    line-height: 1.75;
+  }
+  .essay-card b { color: var(--ink); }
+
+  figure.diagram { margin: 26px 0 8px; }
+  .diagram-frame {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px 12px;
+    overflow-x: auto;
+  }
+  .diagram-frame svg { display: block; margin: 0 auto; color: var(--ink); }
+  figcaption { font-size: 13.5px; color: var(--ink-faint); margin-top: 10px; max-width: 70ch; }
+
+  .node-legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .node-legend-item {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 12px 14px;
+    font-size: 13.5px;
+  }
+  .node-legend-item .id-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .node-id-chip {
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--citation-bg);
+    color: var(--citation);
+  }
+  .node-kind { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); }
+  .node-legend-item p { margin: 0; color: var(--ink-soft); font-size: 13px; max-width: none; }
+
+  h3.sub {
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 30px 0 6px;
+  }
+
+  .probe-group { margin-top: 22px; }
+  .probe-group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .probe-group-head .node-id-chip { font-size: 12px; padding: 2px 8px; }
+  .probe-group-head .quote {
+    font-size: 13px;
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+
+  .probe-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--verify);
+    border-radius: 7px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .probe-card.excluded {
+    border-left: 3px dashed var(--line-strong);
+    opacity: 0.72;
+  }
+  .probe-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 10.5px;
+  }
+  .tag {
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: var(--paper-sunken);
+    color: var(--ink-soft);
+  }
+  .tag.frag-high { background: var(--verify-bg); color: var(--verify); }
+  .tag.frag-low { background: var(--risk-bg); color: var(--risk); }
+  .tag.ordinal { background: var(--citation-bg); color: var(--citation); font-weight: 700; }
+  .probe-text { font-size: 15px; color: var(--ink); font-weight: 500; margin-bottom: 8px; }
+  .probe-signals { font-size: 12.5px; color: var(--ink-faint); }
+  .probe-signals b { color: var(--ink-soft); font-weight: 600; }
+  .excluded-note {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line);
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin: 18px 0 6px;
+  }
+  .stat-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .stat-card .label { font-family: "JetBrains Mono", "SF Mono", Consolas, monospace; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; }
+  .stat-card .value { font-family: "JetBrains Mono", "SF Mono", Consolas, monospace; font-size: 22px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .callout {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--citation);
+    border-radius: 7px;
+    padding: 16px 20px;
+    margin-top: 18px;
+    font-size: 14.5px;
+    color: var(--ink-soft);
+  }
+  .callout b { color: var(--ink); }
+
+  ul.honest { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  ul.honest li { padding-left: 20px; position: relative; max-width: 68ch; font-size: 15px; color: var(--ink-soft); }
+  ul.honest li::before { content: ""; position: absolute; left: 0; top: 8px; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--risk); }
+  ul.honest b { color: var(--ink); }
+
+  footer.colophon {
+    border-top: 1px solid var(--line);
+    margin-top: 80px;
+    padding-top: 24px;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  a { color: var(--citation); }
+  code.inline { font-family: "JetBrains Mono", "SF Mono", Consolas, monospace; font-size: 0.85em; background: var(--paper-sunken); padding: 0.1em 0.4em; border-radius: 4px; color: var(--ink-soft); }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">GRASP — Live Example · Companion to “Chain of Evidence”</div>
+    <h1 class="title">One Essay, Traced</h1>
+    <p class="dek">Not the taxonomy diagram — the actual Claim Graph and probes GRASP generated from one real essay, called live against <code class="inline">openai/gpt-oss-120b</code> during this session. This is the mechanism, with real numbers.</p>
+    <div class="meta-row">
+      <span>claim_graphs.id <b>f5398174-5857-436a</b></span>
+      <span>model <b>gpt-oss-120b</b></span>
+      <span>prompts <b>cg-v1 · pg-v1 · fr-v1</b></span>
+    </div>
+  </header>
+
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="section-label">The input</div>
+      <h2 class="chapter-title">One student essay, 893 characters</h2>
+      <p class="lede">A policy argument about why rice yield is falling in the Mekong Delta: salt-water intrusion, the author argues, not rising temperature. Everything below traces back to this exact text.</p>
+    </div>
+    <div class="essay-card">
+      <b>Biến đổi khí hậu đang làm suy giảm năng suất lúa ở đồng bằng sông Cửu Long,</b> và nguyên nhân chính là <b>xâm nhập mặn</b> chứ không phải nhiệt độ tăng. Tôi cho rằng xâm nhập mặn là nguyên nhân chính vì số liệu của Bộ Nông nghiệp năm 2024 cho thấy diện tích lúa bị nhiễm mặn tăng 18% trong khi vùng không bị xâm nhập mặn chỉ giảm năng suất khoảng 3% do nhiệt độ. Tôi giả định rằng <b>nông dân không thay đổi giống lúa</b> trong giai đoạn này, vì báo cáo không đề cập đến việc chuyển đổi giống. Nếu nông dân đã chuyển sang giống chịu mặn tốt hơn thì số liệu trên có thể phản ánh sai lệch mức độ ảnh hưởng thực sự của xâm nhập mặn. Một ví dụ cụ thể là <b>tỉnh Bến Tre</b>, nơi diện tích nhiễm mặn tăng gấp đôi và năng suất lúa giảm 25% trong cùng kỳ, cho thấy mối liên hệ trực tiếp. Do đó, tôi kết luận rằng <b>các chính sách ứng phó nên ưu tiên đầu tư vào hệ thống ngăn mặn</b> thay vì chỉ tập trung vào giống lúa chịu nhiệt.
+    </div>
+  </section>
+
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="section-label">Stage 1 — FR-202</div>
+      <h2 class="chapter-title">The claim graph the model actually built</h2>
+      <p class="lede">Five nodes, four directed edges. The model — not a template — decided which sentence is the thesis and which claims support, exemplify, or depend on it.</p>
+    </div>
+  </section>
+
+  <figure class="diagram">
+    <div class="diagram-frame">
+      <svg viewBox="0 0 900 500" width="900" height="500" role="img" aria-label="The real claim graph: node c1, the thesis about salt-water intrusion, sits at the center with four edges — c1 supports c2, c3 depends on c1, c4 exemplifies c1, and c5 supports c1.">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+          </marker>
+        </defs>
+
+        <!-- edges first, under nodes -->
+        <!-- c1 -> c2 supports -->
+        <line x1="520" y1="220" x2="690" y2="160" stroke="currentColor" stroke-opacity="0.55" marker-end="url(#arr)" />
+        <text x="605" y="170" text-anchor="middle" font-size="11.5" fill="currentColor" fill-opacity="0.8">supports</text>
+
+        <!-- c3 -> c1 depends_on -->
+        <line x1="290" y1="160" x2="420" y2="225" stroke="currentColor" stroke-opacity="0.55" marker-end="url(#arr)" />
+        <text x="300" y="205" text-anchor="middle" font-size="11.5" fill="currentColor" fill-opacity="0.8">depends_on</text>
+
+        <!-- c4 -> c1 exemplifies -->
+        <line x1="290" y1="360" x2="415" y2="285" stroke="currentColor" stroke-opacity="0.55" marker-end="url(#arr)" />
+        <text x="300" y="335" text-anchor="middle" font-size="11.5" fill="currentColor" fill-opacity="0.8">exemplifies</text>
+
+        <!-- c5 -> c1 supports -->
+        <line x1="690" y1="360" x2="530" y2="290" stroke="currentColor" stroke-opacity="0.55" marker-end="url(#arr)" />
+        <text x="630" y="345" text-anchor="middle" font-size="11.5" fill="currentColor" fill-opacity="0.8">supports</text>
+
+        <!-- c1 thesis, center -->
+        <rect x="380" y="205" width="160" height="90" rx="9" fill="none" stroke="#a5680b" stroke-width="2" />
+        <text x="460" y="240" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">c1</text>
+        <text x="460" y="257" text-anchor="middle" font-size="11" fill="currentColor" fill-opacity="0.7">thesis</text>
+        <text x="460" y="277" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">“xâm nhập mặn là</text>
+        <text x="460" y="290" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">nguyên nhân chính…”</text>
+
+        <!-- c2 claim, upper right -->
+        <rect x="690" y="90" width="150" height="80" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+        <text x="765" y="120" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor">c2</text>
+        <text x="765" y="136" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.7">claim</text>
+        <text x="765" y="154" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">“biến đổi khí hậu…”</text>
+
+        <!-- c3 assumption, upper left -->
+        <rect x="130" y="90" width="160" height="80" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+        <text x="210" y="120" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor">c3</text>
+        <text x="210" y="136" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.7">assumption</text>
+        <text x="210" y="154" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">“nông dân không đổi</text>
+        <text x="210" y="166" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">giống lúa…”</text>
+
+        <!-- c4 evidence, lower left -->
+        <rect x="130" y="330" width="160" height="80" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+        <text x="210" y="360" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor">c4</text>
+        <text x="210" y="376" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.7">evidence</text>
+        <text x="210" y="394" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">“tỉnh Bến Tre,</text>
+        <text x="210" y="406" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">gấp đôi…”</text>
+
+        <!-- c5 claim, lower right -->
+        <rect x="690" y="330" width="150" height="80" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+        <text x="765" y="360" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor">c5</text>
+        <text x="765" y="376" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.7">claim</text>
+        <text x="765" y="394" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">“chính sách ứng</text>
+        <text x="765" y="406" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">phó nên…”</text>
+
+        <text x="450" y="470" text-anchor="middle" font-size="11" font-family="monospace" fill="currentColor" fill-opacity="0.5">4 edges · 5 nodes · every quote_span verified byte-exact against the essay above</text>
+      </svg>
+    </div>
+    <figcaption>Fig. 1 — the real, persisted claim graph for this essay. Note c1 (thesis) is the specific causal claim about salinity, not the broader opening sentence (c2) — that classification call was the model's, not a template's; the diagram shows what it actually decided, not what a human might have picked.</figcaption>
+  </figure>
+
+  <div class="node-legend">
+    <div class="node-legend-item">
+      <div class="id-row"><span class="node-id-chip">c2</span><span class="node-kind">claim</span></div>
+      <p>“Biến đổi khí hậu đang làm suy giảm năng suất lúa ở đồng bằng sông Cửu Long, và nguyên nhân chính là xâm nhập mặn chứ không phải nhiệt độ tăng”</p>
+    </div>
+    <div class="node-legend-item">
+      <div class="id-row"><span class="node-id-chip">c3</span><span class="node-kind">assumption</span></div>
+      <p>“nông dân không thay đổi giống lúa trong giai đoạn này, vì báo cáo không đề cập đến việc chuyển đổi giống”</p>
+    </div>
+    <div class="node-legend-item">
+      <div class="id-row"><span class="node-id-chip">c4</span><span class="node-kind">evidence</span></div>
+      <p>“tỉnh Bến Tre, nơi diện tích nhiễm mặn tăng gấp đôi và năng suất lúa giảm 25% trong cùng kỳ”</p>
+    </div>
+    <div class="node-legend-item">
+      <div class="id-row"><span class="node-id-chip">c5</span><span class="node-kind">claim</span></div>
+      <p>“các chính sách ứng phó nên ưu tiên đầu tư vào hệ thống ngăn mặn thay vì chỉ tập trung vào giống lúa chịu nhiệt”</p>
+    </div>
+  </div>
+
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="section-label">Stage 2 — FR-203</div>
+      <h2 class="chapter-title">From claim to question</h2>
+      <p class="lede">The model read the graph above plus the full essay and wrote 7 candidate oral-defense questions — each anchored to one node, each scored 0–1 for how well a frontier model could answer it <em>without</em> the essay (fragility; higher = better, harder to fake).</p>
+    </div>
+
+    <div class="probe-group">
+      <div class="probe-group-head">
+        <span class="node-id-chip">c1</span>
+        <span class="quote">thesis — the salinity-vs-temperature claim</span>
+      </div>
+
+      <div class="probe-card">
+        <div class="probe-meta">
+          <span class="tag ordinal">selected · 3</span>
+          <span class="tag">counterfactual</span>
+          <span class="tag">evaluate</span>
+          <span class="tag frag-high">fragility 0.95</span>
+        </div>
+        <div class="probe-text">“Nếu dữ liệu năm 2024 cho thấy khu vực không bị xâm nhập mặn cũng giảm năng suất khoảng 20% do nhiệt độ, thì kết luận của bạn rằng xâm nhập mặn là nguyên nhân chính sẽ bị ảnh hưởng như thế nào?”</div>
+        <div class="probe-signals"><b>expects:</b> giảm tính thuyết phục của xâm nhập mặn · cần xem xét ảnh hưởng của nhiệt độ · cập nhật luận điểm dựa trên dữ liệu mới</div>
+      </div>
+
+      <div class="probe-card">
+        <div class="probe-meta">
+          <span class="tag ordinal">selected · 2</span>
+          <span class="tag">trace_own_step</span>
+          <span class="tag">analyse</span>
+          <span class="tag frag-high">fragility 0.95</span>
+        </div>
+        <div class="probe-text">“Hãy giải thích cách bạn từ việc thấy diện tích lúa bị nhiễm mặn tăng 18% và năng suất khu vực không nhiễm mặn giảm chỉ 3% đưa đến kết luận xâm nhập mặn là nguyên nhân chính.”</div>
+        <div class="probe-signals"><b>expects:</b> so sánh tỷ lệ tăng và giảm · đánh giá mức độ ảnh hưởng · kết luận dựa trên sự chênh lệch</div>
+      </div>
+    </div>
+
+    <div class="probe-group">
+      <div class="probe-group-head">
+        <span class="node-id-chip">c2</span>
+        <span class="quote">claim — the climate-change framing sentence</span>
+      </div>
+
+      <div class="probe-card">
+        <div class="probe-meta">
+          <span class="tag ordinal">selected · 4</span>
+          <span class="tag">self_critique</span>
+          <span class="tag">evaluate</span>
+          <span class="tag frag-high">fragility 0.95</span>
+        </div>
+        <div class="probe-text">“Điểm yếu nhất trong lập luận rằng biến đổi khí hậu làm suy giảm năng suất lúa ở đồng bằng sông Cửu Long chủ yếu do xâm nhập mặn, chứ không phải nhiệt độ tăng, là gì?”</div>
+        <div class="probe-signals"><b>expects:</b> độ tin cậy của dữ liệu xâm nhập mặn · giả định nông dân không đổi giống · có thể bỏ qua tác động nhiệt độ · thiếu phân tích đa biến</div>
+      </div>
+
+      <div class="probe-card">
+        <div class="probe-meta">
+          <span class="tag ordinal">selected · 1</span>
+          <span class="tag">novel_transfer</span>
+          <span class="tag">apply</span>
+          <span class="tag frag-high">fragility 0.95</span>
+        </div>
+        <div class="probe-text">“Nếu bạn áp dụng quan điểm rằng xâm nhập mặn là nguyên nhân chính gây giảm năng suất lúa ở Cửu Long sang khu vực đồng bằng sông Hậu, bạn sẽ thu thập và phân tích dữ liệu nào để kiểm chứng?”</div>
+        <div class="probe-signals"><b>expects:</b> đo lường mức độ xâm nhập mặn · so sánh năng suất lúa · thu thập dữ liệu thời tiết · so sánh với ảnh hưởng nhiệt độ</div>
+      </div>
+    </div>
+
+    <div class="probe-group">
+      <div class="probe-group-head">
+        <span class="node-id-chip">c3</span>
+        <span class="quote">assumption — farmers didn't switch rice variety</span>
+      </div>
+
+      <div class="probe-card">
+        <div class="probe-meta">
+          <span class="tag ordinal">selected · 6</span>
+          <span class="tag">metacognitive</span>
+          <span class="tag">reflect</span>
+          <span class="tag frag-low">fragility 0.30</span>
+        </div>
+        <div class="probe-text">“Bạn cảm thấy không chắc chắn nhất ở phần nào khi giả định nông dân không thay đổi giống lúa, và vì sao?”</div>
+        <div class="probe-signals"><b>expects:</b> thiếu bằng chứng về giống · có thể có thay đổi thực tế · độ tin cậy của báo cáo · ảnh hưởng tới kết luận</div>
+      </div>
+
+      <div class="probe-card">
+        <div class="probe-meta">
+          <span class="tag ordinal">selected · 5</span>
+          <span class="tag">counterfactual</span>
+          <span class="tag">evaluate</span>
+          <span class="tag frag-high">fragility 0.95</span>
+        </div>
+        <div class="probe-text">“Nếu có bằng chứng cho thấy nông dân đã chuyển sang giống lúa chịu mặn tốt hơn, điều này sẽ làm thay đổi cách bạn giải thích dữ liệu về diện tích nhiễm mặn tăng 18% như thế nào?”</div>
+        <div class="probe-signals"><b>expects:</b> giảm độ mạnh của mối liên hệ · cần cân nhắc yếu tố giống · cập nhật giả định · có thể giảm vai trò xâm nhập mặn</div>
+      </div>
+    </div>
+
+    <div class="probe-group">
+      <div class="probe-group-head">
+        <span class="node-id-chip">c4</span>
+        <span class="quote">evidence — the Bến Tre example</span>
+      </div>
+
+      <div class="probe-card excluded">
+        <div class="probe-meta">
+          <span class="tag">not selected</span>
+          <span class="tag">self_critique</span>
+          <span class="tag">evaluate</span>
+          <span class="tag frag-high">fragility 0.95</span>
+        </div>
+        <div class="probe-text">“Ví dụ tỉnh Bến Tre mà bạn nêu (diện tích nhiễm mặn tăng gấp đôi, năng suất giảm 25%) có những hạn chế gì khi được dùng làm bằng chứng cho luận điểm chung?”</div>
+        <div class="excluded-note">Fragile (0.95) and well-formed — but by the time selection reached it, coverage across nodes and Bloom levels was already satisfied by c1/c2/c3. See below for why it lost out to a <em>less</em> fragile question instead.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="section-label">Stage 3 — FR-204</div>
+      <h2 class="chapter-title">The selection algorithm's actual trade-off</h2>
+      <p class="lede">6 of 7 candidates were kept. This is where the real numbers say something a diagram of abstract rules can't: fragility alone did not decide the outcome.</p>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="label">Distinct claim nodes</div><div class="value">3</div></div>
+      <div class="stat-card"><div class="label">Distinct Bloom levels</div><div class="value">4</div></div>
+      <div class="stat-card"><div class="label">Mean fragility, selected</div><div class="value">0.79</div></div>
+      <div class="stat-card"><div class="label">Candidates → selected</div><div class="value">7 → 6</div></div>
+    </div>
+
+    <div class="callout">
+      <b>The one trade the numbers reveal:</b> the c3 <em>metacognitive/reflect</em> probe (fragility 0.30 — the weakest of all 7) was kept, while the c4 <em>self_critique/evaluate</em> probe (fragility 0.95 — one of the strongest) was cut. <code class="inline">selectProbes()</code> (<code class="inline">lib/domain/probe-selection.ts</code>) fills coverage first — at least 3 distinct claim nodes and 3 distinct Bloom levels — and only then ranks by fragility. Once c1/c2/c3 already spanned <em>evaluate</em>, <em>analyse</em>, and <em>apply</em>, the reflect-level question was the only candidate that added a fourth Bloom level, so it earned its seat even at a third of the fragility score. A pure top-fragility sort would have kept the c4 question and produced a session that never once asked the student to locate their own uncertainty.
+    </div>
+  </section>
+
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="section-label">What this example doesn't show</div>
+      <h2 class="chapter-title">Where the trace stops</h2>
+    </div>
+    <ul class="honest">
+      <li><b>No session was run.</b> These 6 probes were never actually asked to a student — there's no transcript, so there's nothing here to score. The citation-checked D1–D5 scoring mechanism (every rationale must quote an exact transcript span, or the score is rejected before persistence — see “Chain of Evidence” §II) runs on top of exactly this kind of data, but on a different kind of input than this page has.</li>
+      <li><b>Fragility here is unverified by an adversary run.</b> These are the model's own self-reported fragility scores from <code class="inline">scoreFragility()</code>, not a separate blind-answerability check by a second model (that's <code class="inline">evals/fragility</code>, a different real harness — see “Chain of Evidence” §V).</li>
+      <li><b>This is one essay.</b> One run, one topic, one policy argument. The calibration claims in “Chain of Evidence” are about 300 sessions across ≥3 courses — this page is a worked example, not a sample of that study.</li>
+    </ul>
+  </section>
+
+  <footer class="colophon">
+    <span>GRASP · One Essay, Traced</span>
+    <span>claim_graphs.id f5398174-5857-436a-ae31-cecb2debbeef · model openai/gpt-oss-120b · lib/ai/claimgraph.ts, probes.ts · lib/domain/probe-selection.ts</span>
+  </footer>
+
+</div>
+</body>
+</html>

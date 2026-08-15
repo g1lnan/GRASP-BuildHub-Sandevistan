@@ -1,0 +1,1004 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chain of Evidence</title>
+</head>
+<body>
+<style>
+  :root {
+    --paper: #f1f0ea;
+    --paper-raised: #ffffff;
+    --paper-sunken: #e9e7dd;
+    --ink: #1c1e1b;
+    --ink-soft: #55584f;
+    --ink-faint: #8b8d80;
+    --line: #dad8cc;
+    --line-strong: #c3c1b3;
+    --citation: #a5680b;
+    --citation-bg: #f4e3c2;
+    --verify: #1f6753;
+    --verify-bg: #dceae2;
+    --risk: #a6432e;
+    --risk-bg: #f2ddd6;
+    --shadow: 0 1px 2px rgba(28, 30, 27, 0.06), 0 8px 24px rgba(28, 30, 27, 0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #15171b;
+      --paper-raised: #1c1f24;
+      --paper-sunken: #101215;
+      --ink: #ecebe3;
+      --ink-soft: #aeb0a2;
+      --ink-faint: #6d7065;
+      --line: #2c2f2a;
+      --line-strong: #3b3e37;
+      --citation: #e6b458;
+      --citation-bg: #3a2e14;
+      --verify: #5cc4a4;
+      --verify-bg: #163229;
+      --risk: #e08a72;
+      --risk-bg: #3a2019;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #15171b;
+    --paper-raised: #1c1f24;
+    --paper-sunken: #101215;
+    --ink: #ecebe3;
+    --ink-soft: #aeb0a2;
+    --ink-faint: #6d7065;
+    --line: #2c2f2a;
+    --line-strong: #3b3e37;
+    --citation: #e6b458;
+    --citation-bg: #3a2e14;
+    --verify: #5cc4a4;
+    --verify-bg: #163229;
+    --risk: #e08a72;
+    --risk-bg: #3a2019;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Inter", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 20px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--citation-bg); color: var(--ink); }
+
+  .serif {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  }
+  .mono {
+    font-family: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, "Roboto Mono", monospace;
+  }
+
+  a { color: var(--citation); }
+
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* ---------- masthead ---------- */
+  header.masthead {
+    padding: 72px 0 40px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 56px;
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 22px;
+  }
+  h1.title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    font-size: clamp(38px, 6vw, 60px);
+    font-weight: 600;
+    line-height: 1.02;
+    margin: 0 0 20px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .dek {
+    font-size: 19px;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    text-wrap: balance;
+    margin: 0 0 28px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+  .meta-row span b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---------- sections ---------- */
+  section.chapter {
+    margin-bottom: 76px;
+  }
+  .chapter-head {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 18px;
+    align-items: baseline;
+    margin-bottom: 26px;
+  }
+  .chapter-num {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 30px;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  h2.chapter-title {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 27px;
+    font-weight: 600;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .chapter-body {
+    padding-left: 70px;
+  }
+  .lede {
+    font-size: 17.5px;
+    color: var(--ink-soft);
+    max-width: 66ch;
+    margin: 0 0 26px;
+  }
+  p { max-width: 68ch; margin: 0 0 16px; }
+  .chapter-body > p:last-child { margin-bottom: 0; }
+
+  .cite {
+    background: var(--citation-bg);
+    color: var(--citation);
+    padding: 0.02em 0.35em;
+    border-radius: 3px;
+    font-style: normal;
+  }
+  code.inline {
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--paper-sunken);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- evidence callout ---------- */
+  .evidence-list {
+    list-style: none;
+    margin: 28px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .evidence-list li {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--verify);
+    border-radius: 6px;
+    padding: 16px 20px;
+    max-width: 70ch;
+  }
+  .evidence-list p { margin: 0; font-size: 15.5px; color: var(--ink-soft); }
+  .evidence-list .src {
+    display: block;
+    margin-top: 8px;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  /* ---------- figures / diagrams ---------- */
+  figure.diagram {
+    margin: 30px 0 8px -70px;
+    width: calc(100% + 70px);
+  }
+  .diagram-frame {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 26px 10px;
+    overflow-x: auto;
+  }
+  .diagram-frame svg { display: block; margin: 0 auto; color: var(--ink); }
+  figcaption {
+    font-size: 13.5px;
+    color: var(--ink-faint);
+    margin-top: 10px;
+    max-width: 70ch;
+  }
+
+  /* ---------- rubric table ---------- */
+  .table-wrap { overflow-x: auto; margin-top: 6px; }
+  table.rubric {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 720px;
+    font-size: 14.5px;
+  }
+  table.rubric th {
+    text-align: left;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    padding: 0 14px 10px 0;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  table.rubric td {
+    padding: 16px 14px 16px 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+  table.rubric td.dim { color: var(--ink); }
+  table.rubric .dim b { font-family: "Iowan Old Style", Palatino, Georgia, serif; font-size: 16px; color: var(--ink); display: block; }
+  table.rubric .dim span { font-size: 12px; color: var(--ink-faint); }
+  table.rubric .weight-cell { white-space: nowrap; }
+  .weight-bar-track { width: 74px; height: 6px; background: var(--paper-sunken); border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+  .weight-bar-fill { height: 100%; background: var(--verify); border-radius: 3px; }
+  .weight-num { font-family: "JetBrains Mono", "SF Mono", Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--ink); }
+  .anchor-lo { color: var(--risk); font-size: 13.5px; }
+  .anchor-hi { color: var(--verify); font-size: 13.5px; }
+
+  .footnote {
+    font-size: 13.5px;
+    color: var(--ink-faint);
+    margin-top: 18px;
+    max-width: 68ch;
+  }
+
+  /* ---------- benchmark tables/cards ---------- */
+  h3.sub {
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 34px 0 8px;
+  }
+  .table-wrap table.plain {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 640px;
+    font-size: 14px;
+  }
+  table.plain th {
+    text-align: left;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 0 16px 8px 0;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  table.plain td {
+    padding: 12px 16px 12px 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+  table.plain td.hl { color: var(--ink); font-weight: 600; }
+  table.plain .num { font-family: "JetBrains Mono", "SF Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .tag {
+    display: inline-block;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--verify-bg);
+    color: var(--verify);
+  }
+  .tag.warn { background: var(--citation-bg); color: var(--citation); }
+
+  ol.protocol {
+    margin: 18px 0 0;
+    padding-left: 22px;
+    max-width: 68ch;
+  }
+  ol.protocol li { margin-bottom: 10px; color: var(--ink-soft); font-size: 15.5px; }
+  ol.protocol li::marker { font-family: "JetBrains Mono", "SF Mono", Consolas, monospace; color: var(--ink-faint); }
+
+  /* ---------- tech grid ---------- */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 24px;
+  }
+  @media (max-width: 620px) { .tech-grid { grid-template-columns: 1fr; } }
+  .tech-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+  .tech-card h4 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    font-weight: 600;
+  }
+  .tech-card p { margin: 0; font-size: 14px; color: var(--ink-soft); max-width: none; }
+  .tech-card .src { display: block; margin-top: 10px; font-family: "JetBrains Mono", "SF Mono", Consolas, monospace; font-size: 11.5px; color: var(--ink-faint); }
+
+  /* ---------- proposal box ---------- */
+  .proposal {
+    border: 1px dashed var(--line-strong);
+    border-radius: 10px;
+    padding: 28px 30px;
+    background: var(--paper-raised);
+    margin-top: 6px;
+  }
+  .proposal-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--risk);
+    background: var(--risk-bg);
+    padding: 4px 10px;
+    border-radius: 5px;
+    margin-bottom: 18px;
+  }
+  .proposal h4 {
+    font-family: "Iowan Old Style", Palatino, Georgia, serif;
+    font-size: 16.5px;
+    margin: 26px 0 8px;
+  }
+  .proposal h4:first-of-type { margin-top: 0; }
+  .proposal p { font-size: 15px; color: var(--ink-soft); }
+  .proposal-schema {
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 13px;
+    background: var(--paper-sunken);
+    border-radius: 6px;
+    padding: 14px 16px;
+    color: var(--ink-soft);
+    overflow-x: auto;
+    white-space: pre;
+    margin: 10px 0 0;
+  }
+
+  /* ---------- honesty list ---------- */
+  ul.honest {
+    list-style: none;
+    margin: 24px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  ul.honest li {
+    padding-left: 20px;
+    position: relative;
+    max-width: 68ch;
+    font-size: 15.5px;
+    color: var(--ink-soft);
+  }
+  ul.honest li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid var(--risk);
+  }
+  ul.honest b { color: var(--ink); }
+
+  footer.colophon {
+    border-top: 1px solid var(--line);
+    margin-top: 90px;
+    padding-top: 26px;
+    font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  @media (max-width: 720px) {
+    .chapter-head { grid-template-columns: 36px 1fr; }
+    .chapter-body { padding-left: 0; margin-top: 4px; }
+    figure.diagram { margin-left: 0; width: 100%; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">GRASP — Technical Trust Dossier · Build@Hub Hackathon 2026</div>
+    <h1 class="title">Chain of Evidence</h1>
+    <p class="dek">GRASP scores how well a student understands their own coursework. This is the case for why that score isn't a guess: what gets verified at every hop between a submission and a number, the rubric behind it, and the benchmark plan built to test whether it's actually right.</p>
+    <div class="meta-row">
+      <span>Draft <b>1</b></span>
+      <span>15 Aug 2026</span>
+      <span>Grounded in <b>PRD.md v1.0</b> · <b>DESIGN.md v1.0</b></span>
+      <span>Prepared for the judging panel</span>
+    </div>
+  </header>
+
+  <!-- ============ I ============ -->
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="chapter-num serif">I</div>
+      <h2 class="chapter-title">The question a judge actually asks</h2>
+    </div>
+    <div class="chapter-body">
+      <p class="lede">Ask five words about any AI grading tool: <em>how do you know it's right?</em> "The model is very capable" is not an answer — it's a shrug wearing a suit.</p>
+      <p>GRASP's answer is structural, not rhetorical. Every number the product shows traces back through a chain of checks, and at several links in that chain, an ungrounded output is <em>rejected before it's ever stored</em> — not flagged, not down-weighted, rejected. Section II walks that chain link by link, with the file that enforces each one.</p>
+      <p>A well-engineered chain that doesn't predict what a human examiner would say is still a wrong product. So Section V is not a victory lap — it's the benchmark plan that puts a number on whether the chain works, against a named baseline, with a named gate it has to clear.</p>
+    </div>
+  </section>
+
+  <!-- ============ II ============ -->
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="chapter-num serif">II</div>
+      <h2 class="chapter-title">The grounding chain</h2>
+    </div>
+    <div class="chapter-body">
+      <p class="lede">Seven hops from a student's essay to a number a lecturer can act on. At four of them, something concrete gets checked — and can fail.</p>
+    </div>
+  </section>
+
+  <figure class="diagram">
+    <div class="diagram-frame">
+      <svg viewBox="0 0 1520 300" width="1520" height="300" role="img" aria-label="Seven-stage grounding chain: submission, claim graph with verbatim spans, AI-fragile probes, live transcript, cited score, computed confidence interval, and lecturer override, each arrow labeled with what is enforced at that step.">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+          </marker>
+        </defs>
+
+        <!-- connecting spine -->
+        <line x1="90" y1="150" x2="1430" y2="150" stroke="currentColor" stroke-opacity="0.18" stroke-width="1.5" />
+
+        <!-- node template positions -->
+        <!-- 1 Submission -->
+        <g>
+          <rect x="20" y="112" width="140" height="76" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+          <text x="90" y="145" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">Submission</text>
+          <text x="90" y="163" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">student's own words</text>
+        </g>
+
+        <!-- arrow 1 -->
+        <line x1="160" y1="150" x2="222" y2="150" stroke="currentColor" marker-end="url(#arrow)" />
+        <text x="191" y="115" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">extracted,</text>
+        <text x="191" y="128" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">verbatim spans only</text>
+
+        <!-- 2 Claim Graph -->
+        <g>
+          <rect x="224" y="106" width="150" height="88" rx="8" fill="none" stroke="#a5680b" stroke-width="1.6" />
+          <text x="299" y="139" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">Claim Graph</text>
+          <text x="299" y="157" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">≥3 nodes,</text>
+          <text x="299" y="170" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">quote_span per claim</text>
+        </g>
+
+        <!-- arrow 2 -->
+        <line x1="374" y1="150" x2="436" y2="150" stroke="currentColor" marker-end="url(#arrow)" />
+        <text x="405" y="115" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">quotes the</text>
+        <text x="405" y="128" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">claim's own text</text>
+
+        <!-- 3 Probes -->
+        <g>
+          <rect x="438" y="106" width="150" height="88" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+          <text x="513" y="139" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">Probes</text>
+          <text x="513" y="157" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">disqualified if</text>
+          <text x="513" y="170" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">blind-answerable</text>
+        </g>
+
+        <!-- arrow 3 -->
+        <line x1="588" y1="150" x2="650" y2="150" stroke="currentColor" marker-end="url(#arrow)" />
+        <text x="619" y="115" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">answered live,</text>
+        <text x="619" y="128" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">voice or typed</text>
+
+        <!-- 4 Transcript -->
+        <g>
+          <rect x="652" y="112" width="140" height="76" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+          <text x="722" y="145" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">Transcript</text>
+          <text x="722" y="163" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">identical rubric, both paths</text>
+        </g>
+
+        <!-- arrow 4 -->
+        <line x1="792" y1="150" x2="854" y2="150" stroke="currentColor" marker-end="url(#arrow)" />
+        <text x="823" y="112" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">citation must be an</text>
+        <text x="823" y="125" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">exact substring —</text>
+        <text x="823" y="138" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">else rejected</text>
+
+        <!-- 5 Score -->
+        <g>
+          <rect x="856" y="100" width="160" height="100" rx="8" fill="none" stroke="#a5680b" stroke-width="1.6" />
+          <text x="936" y="134" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">Score D1–D5</text>
+          <text x="936" y="152" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">every dimension</text>
+          <text x="936" y="165" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">cites a transcript span</text>
+        </g>
+
+        <!-- arrow 5 -->
+        <line x1="1016" y1="150" x2="1078" y2="150" stroke="currentColor" marker-end="url(#arrow)" />
+        <text x="1047" y="112" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">completeness ×</text>
+        <text x="1047" y="125" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">coverage × fidelity —</text>
+        <text x="1047" y="138" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">not self-reported</text>
+
+        <!-- 6 Confidence -->
+        <g>
+          <rect x="1080" y="106" width="160" height="88" rx="8" fill="none" stroke="#1f6753" stroke-width="1.6" />
+          <text x="1160" y="139" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">Confidence Interval</text>
+          <text x="1160" y="157" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">low · high ·</text>
+          <text x="1160" y="170" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">high / medium / low</text>
+        </g>
+
+        <!-- arrow 6 -->
+        <line x1="1240" y1="150" x2="1302" y2="150" stroke="currentColor" marker-end="url(#arrow)" />
+        <text x="1271" y="115" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">agrees or</text>
+        <text x="1271" y="128" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.75">overrides</text>
+
+        <!-- 7 Override -->
+        <g>
+          <rect x="1304" y="106" width="180" height="88" rx="8" fill="none" stroke="#1f6753" stroke-width="1.6" />
+          <text x="1394" y="139" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">Lecturer Override</text>
+          <text x="1394" y="157" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">one click —</text>
+          <text x="1394" y="170" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">writes the calibration set</text>
+        </g>
+
+        <text x="90" y="250" text-anchor="middle" font-size="10" font-family="monospace" fill="currentColor" fill-opacity="0.45">FR-201</text>
+        <text x="299" y="250" text-anchor="middle" font-size="10" font-family="monospace" fill="currentColor" fill-opacity="0.45">FR-202</text>
+        <text x="513" y="250" text-anchor="middle" font-size="10" font-family="monospace" fill="currentColor" fill-opacity="0.45">FR-203/204</text>
+        <text x="722" y="250" text-anchor="middle" font-size="10" font-family="monospace" fill="currentColor" fill-opacity="0.45">FR-301/302</text>
+        <text x="936" y="250" text-anchor="middle" font-size="10" font-family="monospace" fill="currentColor" fill-opacity="0.45">FR-401</text>
+        <text x="1160" y="250" text-anchor="middle" font-size="10" font-family="monospace" fill="currentColor" fill-opacity="0.45">FR-402</text>
+        <text x="1394" y="250" text-anchor="middle" font-size="10" font-family="monospace" fill="currentColor" fill-opacity="0.45">FR-406</text>
+      </svg>
+    </div>
+    <figcaption>Fig. 1 — the seven hops between a student's submission and a lecturer-visible score. Amber-outlined stages carry structural checks (verbatim spans, exact-substring citations); green-outlined stages carry deterministic computation and the human decision. Requirement IDs from PRD §4 run beneath each stage.</figcaption>
+  </figure>
+
+  <section class="chapter">
+    <div class="chapter-body">
+      <ul class="evidence-list">
+        <li>
+          <p>A score with no citation is treated as a bug, not a style note. <span class="cite">citationsMatchTranscripts()</span> checks every cited quote against the literal text of the transcript turn it names before a score is allowed to persist — a paraphrased or invented citation fails the check and the score is never stored.</p>
+          <span class="src">lib/domain/scoring.ts</span>
+        </li>
+        <li>
+          <p>Confidence is computed, not requested. <span class="cite">confidenceInterval()</span> derives its margin from session completeness, probe coverage, and transcription fidelity — never from the model's own stated certainty, which is exactly the number a black-box grader would hand you instead.</p>
+          <span class="src">lib/domain/scoring.ts</span>
+        </li>
+        <li>
+          <p>A probe only survives selection if it can't be answered blind. <span class="cite">evals/fragility</span> sends every candidate question to a frontier model with no submission attached; a probe pool fails the gate the moment more than 25% of its questions turn out to be generic exam questions in disguise.</p>
+          <span class="src">lib/domain/fragility.ts · evals/fragility</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ III ============ -->
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="chapter-num serif">III</div>
+      <h2 class="chapter-title">The rubric, structured</h2>
+    </div>
+    <div class="chapter-body">
+      <p class="lede">Five dimensions, one plain-language question each, weighted by how much it separates understanding from memorised polish. This is the default barem every session starts from — configurable per assignment, but the number the calibration study is run against.</p>
+
+      <div class="table-wrap">
+        <table class="rubric">
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th>Question it answers</th>
+              <th>Weight</th>
+              <th>Anchor — 1</th>
+              <th>Anchor — 5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="dim"><b>D1 · Recall</b><span>mono d1Recall</span></td>
+              <td>Can they state what they claimed?</td>
+              <td class="weight-cell">
+                <div class="weight-bar-track"><div class="weight-bar-fill" style="width:15%"></div></div>
+                <span class="weight-num">0.15</span>
+              </td>
+              <td class="anchor-lo">Cannot restate their own claim</td>
+              <td class="anchor-hi">Restates it precisely, unprompted</td>
+            </tr>
+            <tr>
+              <td class="dim"><b>D2 · Explanation</b><span>mono d2Explanation</span></td>
+              <td>Can they say why, in their own words?</td>
+              <td class="weight-cell">
+                <div class="weight-bar-track"><div class="weight-bar-fill" style="width:30%"></div></div>
+                <span class="weight-num">0.30</span>
+              </td>
+              <td class="anchor-lo">Repeats the text verbatim, or goes silent</td>
+              <td class="anchor-hi">Explains the causal chain in fresh words</td>
+            </tr>
+            <tr>
+              <td class="dim"><b>D3 · Application</b><span>mono d3Application</span></td>
+              <td>Can they use it on a case they haven't seen?</td>
+              <td class="weight-cell">
+                <div class="weight-bar-track"><div class="weight-bar-fill" style="width:25%"></div></div>
+                <span class="weight-num">0.25</span>
+              </td>
+              <td class="anchor-lo">Cannot engage with a novel case</td>
+              <td class="anchor-hi">Applies it correctly, notes what changes</td>
+            </tr>
+            <tr>
+              <td class="dim"><b>D4 · Critical evaluation</b><span>mono d4Evaluation</span></td>
+              <td>Can they judge limits and alternatives?</td>
+              <td class="weight-cell">
+                <div class="weight-bar-track"><div class="weight-bar-fill" style="width:20%"></div></div>
+                <span class="weight-num">0.20</span>
+              </td>
+              <td class="anchor-lo">Cannot name a weakness or alternative</td>
+              <td class="anchor-hi">Names weaknesses, alternatives, and why they were rejected</td>
+            </tr>
+            <tr>
+              <td class="dim"><b>D5 · Metacognition</b><span>mono d5Metacognition</span></td>
+              <td>Do they know what they don't know?</td>
+              <td class="weight-cell">
+                <div class="weight-bar-track"><div class="weight-bar-fill" style="width:10%"></div></div>
+                <span class="weight-num">0.10</span>
+              </td>
+              <td class="anchor-lo">Claims full confidence throughout</td>
+              <td class="anchor-hi">Precisely locates their own gaps</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footnote">Weights sum to 1.00 by construction — <span class="cite">normalizeRubricWeights()</span> renormalises any custom set a lecturer configures, so a composite score stays comparable across assignments with different weighting. Anchors 1/3/5 shown; the full 1.0–5.0 scale is scored in 0.1 increments. Source: PRD §5, <code class="inline">lib/domain/scoring.ts</code>.</p>
+    </div>
+  </section>
+
+  <!-- ============ IV ============ -->
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="chapter-num serif">IV</div>
+      <h2 class="chapter-title">The rubric-derived knowledge graph</h2>
+    </div>
+    <div class="chapter-body">
+      <p class="lede">The rubric isn't five isolated rows — it's the target every probe type is designed to hit. This is the taxonomy the probe-generation prompt is built against: one claim from the student's own graph, six ways to interrogate it, and the understanding dimension each way is meant to surface.</p>
+    </div>
+  </section>
+
+  <figure class="diagram">
+    <div class="diagram-frame">
+      <svg viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-label="Knowledge graph of the grading framework: a claim node branches into six probe types (counterfactual, road not taken, novel transfer, self critique, metacognitive, trace own step), each connected to the rubric dimension it is designed to surface, with a Bloom-level escalation strip and coverage rule beneath.">
+        <defs>
+          <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor" fill-opacity="0.55" />
+          </marker>
+        </defs>
+
+        <!-- claim node -->
+        <rect x="500" y="16" width="200" height="56" rx="8" fill="none" stroke="#a5680b" stroke-width="1.8" />
+        <text x="600" y="40" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">Claim node</text>
+        <text x="600" y="57" text-anchor="middle" font-size="10.5" fill="currentColor" fill-opacity="0.6">e.g. c4 — student's own text</text>
+
+        <!-- probe type row (y ~ 150) -->
+        <!-- positions across width 60..1140 for 6 items -->
+        <!-- trace_own_step -->
+        <g>
+          <line x1="600" y1="72" x2="140" y2="146" stroke="currentColor" stroke-opacity="0.35" marker-end="url(#arrow2)" />
+          <rect x="60" y="150" width="160" height="60" rx="7" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+          <text x="140" y="176" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">trace_own_step</text>
+          <text x="140" y="193" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">claim A → claim B</text>
+        </g>
+
+        <!-- counterfactual -->
+        <g>
+          <line x1="590" y1="72" x2="345" y2="146" stroke="currentColor" stroke-opacity="0.35" marker-end="url(#arrow2)" />
+          <rect x="265" y="150" width="160" height="60" rx="7" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+          <text x="345" y="176" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">counterfactual</text>
+          <text x="345" y="193" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">if [assumption] were false</text>
+        </g>
+
+        <!-- novel_transfer -->
+        <g>
+          <line x1="595" y1="72" x2="550" y2="146" stroke="currentColor" stroke-opacity="0.35" marker-end="url(#arrow2)" />
+          <rect x="470" y="150" width="160" height="60" rx="7" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+          <text x="550" y="176" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">novel_transfer</text>
+          <text x="550" y="193" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">apply to an unseen case</text>
+        </g>
+
+        <!-- road_not_taken -->
+        <g>
+          <line x1="605" y1="72" x2="755" y2="146" stroke="currentColor" stroke-opacity="0.35" marker-end="url(#arrow2)" />
+          <rect x="675" y="150" width="160" height="60" rx="7" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+          <text x="755" y="176" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">road_not_taken</text>
+          <text x="755" y="193" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">why not the alternative</text>
+        </g>
+
+        <!-- self_critique -->
+        <g>
+          <line x1="610" y1="72" x2="960" y2="146" stroke="currentColor" stroke-opacity="0.35" marker-end="url(#arrow2)" />
+          <rect x="880" y="150" width="160" height="60" rx="7" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+          <text x="960" y="176" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">self_critique</text>
+          <text x="960" y="193" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">weakest link in the argument</text>
+        </g>
+
+        <!-- metacognitive -->
+        <g>
+          <line x1="615" y1="72" x2="1140" y2="146" stroke="currentColor" stroke-opacity="0.35" marker-end="url(#arrow2)" />
+          <rect x="1060" y="150" width="160" height="60" rx="7" fill="none" stroke="currentColor" stroke-opacity="0.55" />
+          <text x="1140" y="176" text-anchor="middle" font-size="12" font-weight="600" fill="currentColor">metacognitive</text>
+          <text x="1140" y="193" text-anchor="middle" font-size="10" fill="currentColor" fill-opacity="0.6">least-confident zone</text>
+        </g>
+
+        <!-- dimension row (y ~ 300) -->
+        <rect x="60" y="300" width="150" height="52" rx="7" fill="none" stroke="#1f6753" stroke-width="1.6" />
+        <text x="135" y="331" text-anchor="middle" font-size="12.5" font-weight="600" fill="currentColor">D1 Recall</text>
+
+        <rect x="255" y="300" width="150" height="52" rx="7" fill="none" stroke="#1f6753" stroke-width="1.6" />
+        <text x="330" y="331" text-anchor="middle" font-size="12.5" font-weight="600" fill="currentColor">D2 Explanation</text>
+
+        <rect x="450" y="300" width="150" height="52" rx="7" fill="none" stroke="#1f6753" stroke-width="1.6" />
+        <text x="525" y="331" text-anchor="middle" font-size="12.5" font-weight="600" fill="currentColor">D3 Application</text>
+
+        <rect x="675" y="300" width="150" height="52" rx="7" fill="none" stroke="#1f6753" stroke-width="1.6" />
+        <text x="750" y="331" text-anchor="middle" font-size="12.5" font-weight="600" fill="currentColor">D4 Evaluation</text>
+
+        <rect x="1000" y="300" width="150" height="52" rx="7" fill="none" stroke="#1f6753" stroke-width="1.6" />
+        <text x="1075" y="331" text-anchor="middle" font-size="12.5" font-weight="600" fill="currentColor">D5 Metacognition</text>
+
+        <!-- edges probe -> dimension -->
+        <!-- trace_own_step -> D1, D2 -->
+        <line x1="120" y1="210" x2="130" y2="300" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+        <line x1="165" y1="210" x2="320" y2="300" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+        <!-- counterfactual -> D2, D3 -->
+        <line x1="330" y1="210" x2="335" y2="300" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+        <line x1="370" y1="210" x2="510" y2="300" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+        <!-- novel_transfer -> D3 -->
+        <line x1="545" y1="210" x2="530" y2="300" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+        <!-- road_not_taken -> D4 -->
+        <line x1="755" y1="210" x2="752" y2="300" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+        <!-- self_critique -> D4 -->
+        <line x1="950" y1="210" x2="800" y2="300" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+        <!-- metacognitive -> D5 -->
+        <line x1="1130" y1="210" x2="1080" y2="300" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+
+        <!-- bloom strip -->
+        <line x1="60" y1="450" x2="1140" y2="450" stroke="currentColor" stroke-opacity="0.2" />
+        <text x="60" y="420" font-size="11" font-family="monospace" fill="currentColor" fill-opacity="0.55">independent axis, every probe also carries one:</text>
+
+        <g font-size="11.5" fill="currentColor">
+          <circle cx="90" cy="450" r="4" fill="currentColor" />
+          <text x="104" y="454">understand</text>
+          <line x1="185" y1="450" x2="225" y2="450" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+          <circle cx="255" cy="450" r="4" fill="currentColor" />
+          <text x="269" y="454">apply</text>
+          <line x1="315" y1="450" x2="355" y2="450" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+          <circle cx="385" cy="450" r="4" fill="currentColor" />
+          <text x="399" y="454">analyse</text>
+          <line x1="455" y1="450" x2="495" y2="450" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+          <circle cx="525" cy="450" r="4" fill="currentColor" />
+          <text x="539" y="454">evaluate</text>
+          <line x1="600" y1="450" x2="640" y2="450" stroke="currentColor" stroke-opacity="0.4" marker-end="url(#arrow2)" />
+          <circle cx="670" cy="450" r="4" fill="currentColor" />
+          <text x="684" y="454">reflect</text>
+        </g>
+
+        <text x="60" y="495" font-size="12" fill="currentColor" fill-opacity="0.7">Selection guarantee: the chosen probe set must span ≥3 distinct claim nodes and ≥3 distinct Bloom levels.</text>
+        <text x="60" y="515" font-size="10.5" font-family="monospace" fill="currentColor" fill-opacity="0.5">MIN_DISTINCT_NODES = 3 · MIN_DISTINCT_BLOOMS = 3 — lib/domain/probe-selection.ts</text>
+      </svg>
+    </div>
+    <figcaption>Fig. 2 — the taxonomy behind probe generation, synthesised from the probe-type definitions in <code class="inline">lib/ai/prompts/probes.ts</code> and the selection guarantee in <code class="inline">lib/domain/probe-selection.ts</code>. This is a designed conceptual graph, not a table stored at runtime — it exists to make an implicit design decision auditable.</figcaption>
+  </figure>
+
+  <!-- ============ V ============ -->
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="chapter-num serif">V</div>
+      <h2 class="chapter-title">The benchmark plan</h2>
+    </div>
+    <div class="chapter-body">
+      <p class="lede">Two questions, and answering only one of them is how bad AI-grading products get built: which model, and compared to what ground truth. Below is GRASP's answer to both, plus the harnesses already wired to run it.</p>
+
+      <h3 class="sub">Which model</h3>
+      <p>Three candidates sit on the routing table today, priced per call in <code class="inline">lib/usage/pricing.ts</code> so the comparison is measured, not argued.</p>
+      <div class="table-wrap">
+        <table class="plain">
+          <thead>
+            <tr><th>Candidate</th><th>Role today</th><th>Input $ / 1M tok</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="hl">Groq — gpt-oss-120b</td>
+              <td>Live prototype adapter for claim graph, probes, and final score</td>
+              <td class="num">$0.15</td>
+              <td><span class="tag">wired now</span></td>
+            </tr>
+            <tr>
+              <td class="hl">Claude Sonnet 5</td>
+              <td>Cost/quality reference point, PRD Q1</td>
+              <td class="num">$2.00</td>
+              <td><span class="tag warn">calibration candidate</span></td>
+            </tr>
+            <tr>
+              <td class="hl">Claude Opus 4.8</td>
+              <td>Quality ceiling — DESIGN §6.2 default for reasoning-critical paths</td>
+              <td class="num">$5.00</td>
+              <td><span class="tag warn">calibration candidate</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="footnote">Modelled full-session cost from DESIGN §8: ≈4,060 ₫ on Sonnet-tier, ≈7,600 ₫ on Opus-tier — both explicitly "modelled, not measured" until instrumented at scale. The Groq figure isn't modelled end-to-end yet; closing that gap is step one of the protocol below.</p>
+
+      <h3 class="sub">Compared to whom</h3>
+      <p>Ground truth is blind lecturer scoring — never the model marking its own homework. Wherever a session has two independent lecturer scorings, GRASP also computes Cohen's κ between them first: if two examiners don't agree with each other, a high correlation against either one proves nothing about the model. κ is the ceiling; r is judged against that ceiling, not against 1.0.</p>
+      <p>A second, different comparison runs in parallel: probes are benchmarked against a blind frontier model with no submission attached, to test whether the <em>questions</em> are fair — a separate claim from whether the <em>scores</em> are accurate.</p>
+
+      <h3 class="sub">Metrics and gates</h3>
+      <div class="table-wrap">
+        <table class="plain">
+          <thead>
+            <tr><th>Metric</th><th>Gate</th><th>What it protects against</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="hl">Composite Pearson r</td><td class="num">&gt; 0.70, n ≥ 300, ≥3 courses</td><td>the headline claim — G1</td></tr>
+            <tr><td class="hl">Per-dimension r / MAE / bias</td><td class="num">reported, not gated</td><td>an aggregate r hiding one broken dimension</td></tr>
+            <tr><td class="hl">Cohen's κ, lecturer↔lecturer</td><td class="num">&gt; 0.6</td><td>calibrating against disagreement</td></tr>
+            <tr><td class="hl">AI-fragility</td><td class="num">&lt; 25% blind-answerable</td><td>generic quiz questions passing as probes</td></tr>
+            <tr><td class="hl">Learning value (self-report)</td><td class="num">≥ 4.0 / 5.0</td><td>an accurate score nobody found useful — G2</td></tr>
+            <tr><td class="hl">Cost / completed session</td><td class="num">measured per candidate</td><td>deciding PRD Q1 on vibes</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="sub">Protocol</h3>
+      <ol class="protocol">
+        <li>Freeze prompt versions for the run (<code class="inline">cg-v3</code>, <code class="inline">pg-v1</code>, <code class="inline">score-v2</code>) so any score difference is attributable to the model candidate, not a moving prompt.</li>
+        <li>Run the identical session set through all three model candidates — same submissions, same probes where feasible, same time cap.</li>
+        <li>Collect ≥2 independent blind lecturer scorings per session, scored without visibility into the model's output.</li>
+        <li>Compute per-dimension and composite r, κ, MAE, and bias per candidate, plus measured cost/session in VND.</li>
+        <li>Resolve PRD Q1 on the joint cost-vs-r frontier — not cost alone, and not correlation alone.</li>
+        <li>Re-run the 20-session golden set (<code class="inline">pnpm eval:golden</code>) before every subsequent release as a standing regression gate.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ VI ============ -->
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="chapter-num serif">VI</div>
+      <h2 class="chapter-title">Proof of multiple technologies</h2>
+    </div>
+    <div class="chapter-body">
+      <p class="lede">Not one model call wrapped in a UI — seven distinct, independently testable mechanisms, each with its own file and its own unit tests.</p>
+
+      <div class="tech-grid">
+        <div class="tech-card">
+          <h4>Schema-validated structured output</h4>
+          <p>Every LLM call is constrained by a Zod schema shared between the API boundary and the model's output contract — no hand-parsed JSON, no silent shape drift.</p>
+          <span class="src">lib/ai/*-schemas.ts</span>
+        </div>
+        <div class="tech-card">
+          <h4>Citation-verification engine</h4>
+          <p>A deterministic substring check that runs on every score before persistence — a rationale that quotes something the student never said is a rejected write, not a lower confidence.</p>
+          <span class="src">lib/domain/scoring.ts</span>
+        </div>
+        <div class="tech-card">
+          <h4>Adversarial fragility harness</h4>
+          <p>A second, independent model attempts every candidate probe blind. Fragility is measured, not asserted, before a probe is allowed near a student.</p>
+          <span class="src">lib/domain/fragility.ts · evals/fragility</span>
+        </div>
+        <div class="tech-card">
+          <h4>Coverage-constrained selection</h4>
+          <p>Probe selection is a small combinatorial optimiser, not top-N sorting — it guarantees breadth across claim nodes and Bloom levels before it optimises for fragility.</p>
+          <span class="src">lib/domain/probe-selection.ts</span>
+        </div>
+        <div class="tech-card">
+          <h4>Statistics engine</h4>
+          <p>Hand-implemented, unit-tested Pearson correlation and Cohen's κ — the calibration study doesn't depend on a spreadsheet macro.</p>
+          <span class="src">lib/domain/calibration.ts</span>
+        </div>
+        <div class="tech-card">
+          <h4>Vietnamese ASR with confidence propagation</h4>
+          <p>A swappable ASR provider interface; transcription confidence flows all the way into the score's confidence interval rather than being discarded after transcription.</p>
+          <span class="src">lib/asr/*</span>
+        </div>
+        <div class="tech-card">
+          <h4>Per-call cost instrumentation</h4>
+          <p>Every model and ASR call writes a priced usage event across two providers and three currencies of pricing, converted to VND at a configurable FX rate.</p>
+          <span class="src">lib/usage/pricing.ts · lib/usage/record.ts</span>
+        </div>
+        <div class="tech-card">
+          <h4>Prompt-version attribution</h4>
+          <p>Every prompt module carries a version constant persisted with the row it produced — a score change is always traceable to a specific prompt edit.</p>
+          <span class="src">lib/ai/prompts/*</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VII ============ -->
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="chapter-num serif">VII</div>
+      <h2 class="chapter-title">Proposed: the teacher's answer key as a second input</h2>
+    </div>
+    <div class="chapter-body">
+      <p class="lede">Everything in Sections II and IV grounds the score against the student's <em>own</em> transcript — internal consistency. It says nothing about whether what the student explained is what the assignment actually intended. A second, independent input closes that gap.</p>
+
+      <div class="proposal">
+        <span class="proposal-flag">Proposed — not yet built</span>
+
+        <h4>The gap today</h4>
+        <p>A confident, well-organised, but conceptually wrong explanation can currently pass through untouched — nothing in the pipeline compares a claim to what the lecturer actually expected, because the only reference material the system ever sees is the student's own submission.</p>
+
+        <h4>The proposal</h4>
+        <p>Let a lecturer optionally attach a reference answer key or model solution per assignment, at the same configuration step as FR-104, through the same ingest path already built for FR-201 (<code class="inline">.docx</code> / <code class="inline">.pdf</code> / text).</p>
+
+        <h4>Pipeline change</h4>
+        <p>Run the existing Claim Graph extraction on the reference document — the same model call, the same schema, tagged <code class="inline">canonical: true</code>. Add one alignment stage that matches each student claim node to its nearest reference claim node and produces a per-assignment coverage score, plus the list of reference concepts the student's graph never touched.</p>
+        <div class="proposal-schema">reference_answer_keys { assignment_id, source, extracted_text, claim_graph_id }
+claim_alignments      { student_claim_id, reference_claim_id, similarity, covered: boolean }</div>
+
+        <h4>A seventh probe type</h4>
+        <p><code class="inline">reference_gap</code> — a probe that specifically targets a concept present in the reference key but weak or absent in the student's own graph. This is fragile in a new way: answering it requires knowing both what the assignment expected <em>and</em> whether the student actually addressed it — general knowledge alone doesn't help.</p>
+
+        <h4>What doesn't change</h4>
+        <p>D1–D5 stay exactly as defined in Section III. Coverage against the reference key is a new, separately-shown piece of evidence in the bundle — never silently folded into the composite, never a sixth dimension, never a stored label. That preserves FR-405 (the 2×2 is derived, never stored as an accusation) and the entire premise of this document: no verdict without a citation attached to it.</p>
+
+        <h4>Why this matters here</h4>
+        <p>It answers the mentor's note directly — "the input might be the teacher's answer sheet" — and it's the next thing a skeptical judge would ask for after reading Section II: <em>you've shown me the score is internally consistent; now show me it's externally correct.</em> This is that second axis.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VIII ============ -->
+  <section class="chapter">
+    <div class="chapter-head">
+      <div class="chapter-num serif">VIII</div>
+      <h2 class="chapter-title">What we don't claim yet</h2>
+    </div>
+    <div class="chapter-body">
+      <p class="lede">A document arguing for grounded trust forfeits the argument the moment it overclaims. Four open items, stated plainly.</p>
+      <ul class="honest">
+        <li><b>G1 has not been run.</b> Composite r &gt; 0.7 across 300 sessions is the gate, not a result — no pilot data exists yet to compute it against.</li>
+        <li><b>The cost model is modelled, not measured.</b> The 4,060 ₫ / 7,600 ₫ figures in DESIGN §8 are estimates pending real <code class="inline">usage_events</code> aggregation at scale.</li>
+        <li><b>The typed-vs-voice validity gap is open, not closed.</b> The scoring prompt is instructed to ignore input mode, and typed responses correctly show full transcription reliability — but whether the two response conditions are truly comparable in practice is an unmeasured question, tracked explicitly in DESIGN §11.</li>
+        <li><b>Section VII is a design proposal.</b> No reference-answer-key schema, alignment stage, or new probe type exists in the codebase today — it's scoped, not shipped.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="colophon">
+    <span>GRASP · Chain of Evidence</span>
+    <span>Sources: PRD.md §4, §5, §7 · DESIGN.md §4.2, §6.2, §8, §11 · lib/domain/*, lib/ai/*</span>
+  </footer>
+
+</div>
+</body>
+</html>

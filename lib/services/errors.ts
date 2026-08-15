@@ -86,6 +86,10 @@ export class InvalidProbeClaimError extends Error {
   readonly name = 'InvalidProbeClaimError'
 }
 
+export class InvalidClaimSpanError extends Error {
+  readonly name = 'InvalidClaimSpanError'
+}
+
 export class AsrConfigurationError extends Error {
   readonly name = 'AsrConfigurationError'
 }

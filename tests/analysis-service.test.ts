@@ -282,6 +282,46 @@ describe('analyzeSubmission', () => {
     expect(probes.saved).toBeNull()
   })
 
+  it('fails analysis when a claim node quotes text absent from the submission', async () => {
+    const submissions = new SubmissionRepositoryFake(submission)
+    const claimGraphs = new ClaimGraphRepositoryFake()
+    const probes = new ProbeRepositoryFake()
+    const usage = new UsageRepositoryFake()
+    const fabricatedTextModel: ClaimGraphModel = {
+      async generate(): Promise<ClaimGraphResult> {
+        return {
+          ...graphResult,
+          graph: {
+            ...graphResult.graph,
+            nodes: [
+              {
+                ...graphResult.graph.nodes[0],
+                text: 'câu này không có trong bài nộp',
+              } as (typeof graphResult.graph.nodes)[number],
+              ...graphResult.graph.nodes.slice(1),
+            ],
+          },
+        }
+      },
+    }
+
+    const operation = analyzeSubmission({
+      submissions,
+      claimGraphs,
+      probes,
+      usage,
+      claimGraphModel: fabricatedTextModel,
+      probeModel: okProbeModel,
+      submissionId,
+    })
+
+    await expect(operation).rejects.toMatchObject({ name: 'InvalidClaimSpanError' })
+    expect(submissions.statuses.map((s) => s.status)).toEqual(['analysing', 'failed'])
+    // Usage for the claim-graph call is still recorded — the call happened and cost money.
+    expect(usage.rows.map((r) => r.stage)).toEqual(['claim_graph'])
+    expect(claimGraphs.saved).toBeNull()
+    expect(probes.saved).toBeNull()
+  })
   it('throws not found for a missing submission', async () => {
     const operation = analyzeSubmission({
       submissions: new SubmissionRepositoryFake(null),

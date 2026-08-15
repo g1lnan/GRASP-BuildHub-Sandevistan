@@ -43,6 +43,10 @@ export function groqClaimGraphModel(): ClaimGraphModel {
       const response = await groq().chat.completions.create({
         model: GROQ_MODELS.claimGraph,
         reasoning_effort: 'high',
+        // Without an explicit ceiling, high reasoning effort can exhaust the
+        // completion budget before emitting the JSON body, which Groq surfaces
+        // as a 400 json_validate_failed rather than a clean truncation.
+        max_completion_tokens: 6500,
         response_format: {
           type: 'json_schema',
           json_schema: { name: 'claim_graph', strict: true, schema: claimGraphJsonSchema },

@@ -81,6 +81,9 @@ export function groqProbeModel(): ProbeModel {
       const response = await groq().chat.completions.create({
         model: GROQ_MODELS.probeGen,
         reasoning_effort: 'high',
+        // See lib/ai/claimgraph.ts — without a ceiling, high reasoning effort
+        // can burn the whole completion budget before the JSON body is emitted.
+        max_completion_tokens: 6000,
         response_format: {
           type: 'json_schema',
           json_schema: { name: 'probe_set', strict: true, schema: probeSetJsonSchema },
@@ -134,6 +137,9 @@ export function groqProbeModel(): ProbeModel {
       const response = await groq().chat.completions.create({
         model: GROQ_MODELS.fragilityAdversary,
         reasoning_effort: 'high',
+        // See lib/ai/claimgraph.ts. Assessments are short, but reasoning still
+        // needs a ceiling or a large probe batch can exhaust the budget.
+        max_completion_tokens: 3000,
         response_format: {
           type: 'json_schema',
           json_schema: {
@@ -196,6 +202,9 @@ export function groqProbeModel(): ProbeModel {
       const response = await groq().chat.completions.create({
         model: GROQ_MODELS.fragilityAdversary,
         reasoning_effort: 'high',
+        // See lib/ai/claimgraph.ts. Assessments are short, but reasoning still
+        // needs a ceiling or a large probe batch can exhaust the budget.
+        max_completion_tokens: 4000,
         response_format: {
           type: 'json_schema',
           json_schema: {

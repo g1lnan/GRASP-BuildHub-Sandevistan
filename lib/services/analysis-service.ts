@@ -2,10 +2,11 @@ import type { ClaimGraphModel } from '@/lib/ai/claimgraph'
 import type { BloomLevel, ProbeType } from '@/lib/ai/probe-schemas'
 import type { ProbeModel } from '@/lib/ai/probes'
 import type { ClaimEdgeOutput, ClaimNodeOutput } from '@/lib/ai/schemas'
+import { resolveClaimGraphSpans } from '@/lib/domain/claim-graph'
 import { selectProbes } from '@/lib/domain/probe-selection'
 import type { UsageRepository } from '@/lib/usage/record'
 import { recordModelUsage } from '@/lib/usage/record'
-import { InvalidProbeClaimError, ResourceNotFoundError } from './errors'
+import { InvalidClaimSpanError, InvalidProbeClaimError, ResourceNotFoundError } from './errors'
 
 /**
  * Ingest -> Claim Graph -> Probes pipeline (DESIGN §5.1, FR-202/203/204). Models
@@ -120,18 +121,28 @@ export async function analyzeSubmission(request: {
       tokens: graph.tokens,
       submissionId: submission.id,
     })
+
+    // The model self-reports quote_span as character offsets and is unreliable
+    // at that arithmetic even when `text` is genuinely verbatim. Recompute each
+    // span from the real submission string rather than trusting the model's
+    // count; a node whose text isn't a genuine substring anywhere is a
+    // fabricated quote and fails analysis rather than being silently persisted.
+    const spanReport = resolveClaimGraphSpans(graph.graph, submission.extractedText)
+    if (!spanReport.pass) throw new InvalidClaimSpanError()
+    const resolvedGraph = { ...graph.graph, nodes: [...spanReport.nodes] }
+
     const claimGraph = await request.claimGraphs.createNextVersion({
       submissionId: submission.id,
       model: graph.model,
       promptVersion: graph.promptVersion,
-      nodes: graph.graph.nodes.map(toPersistedNode),
-      edges: graph.graph.edges,
-      concepts: graph.graph.concepts,
+      nodes: resolvedGraph.nodes.map(toPersistedNode),
+      edges: resolvedGraph.edges,
+      concepts: resolvedGraph.concepts,
     })
 
     // 2. Candidate probes (FR-203)
     const gen = await request.probeModel.generateProbes({
-      graph: graph.graph,
+      graph: resolvedGraph,
       submissionText: submission.extractedText,
     })
     await recordModelUsage({
@@ -142,7 +153,7 @@ export async function analyzeSubmission(request: {
       tokens: gen.tokens,
       submissionId: submission.id,
     })
-    const claimNodeIds = new Set(graph.graph.nodes.map((node) => node.id))
+    const claimNodeIds = new Set(resolvedGraph.nodes.map((node) => node.id))
     if (gen.candidates.some((candidate) => !claimNodeIds.has(candidate.claim_node_id))) {
       throw new InvalidProbeClaimError()
     }

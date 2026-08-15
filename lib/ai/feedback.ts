@@ -23,6 +23,9 @@ export class GroqFeedbackModel implements FeedbackModel {
     const response = await (this.client ?? groq()).chat.completions.create({
       model: this.model,
       reasoning_effort: 'medium',
+      // See lib/ai/claimgraph.ts — without a ceiling, high reasoning effort
+      // can burn the whole completion budget before the JSON body is emitted.
+      max_completion_tokens: 4000,
       response_format: {
         type: 'json_schema',
         json_schema: {

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "error"
+      },
+      "style": {
+        "noNonNullAssertion": "error",
+        "useConst": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noConfusingVoidType": "error"
+      },
+      "complexity": {
+        "noForEach": "error",
+        "noUselessConstructor": "error"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded"
+    }
+  },
+  "files": {
+    "include": ["**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.json"],
+    "ignore": [
+      "node_modules",
+      ".next",
+      ".omc",
+      ".omo",
+      "lib/db/migrations",
+      "next-env.d.ts",
+      "playwright-report",
+      "test-results"
+    ]
+  }
+}

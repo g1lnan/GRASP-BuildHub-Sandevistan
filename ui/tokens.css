@@ -1,0 +1,287 @@
+/* ============================================================================
+   GRASP — Design Tokens v2 (game-y / Duolingo-inspired)
+   Spec: FRONTEND.md · Drop into app/globals.css (or import above Tailwind)
+
+   Fonts (self-host or Google Fonts — both carry full Vietnamese subsets):
+     Baloo 2         600 700 800   — display, headings, XP numerals
+     Be Vietnam Pro  400 500 600 700 — UI, body, transcripts, data
+
+   Vietnamese stacks a diacritic AND a tone mark on one vowel (ế ộ ữ) and uses đ.
+   Most chunky display faces break on this. Do not substitute either face
+   without verifying tone-mark placement at 12px and 44px.
+   ========================================================================= */
+
+:root {
+  /* --- Type ---------------------------------------------------------------- */
+  --font-display: 'Baloo 2', 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-ui:      'Be Vietnam Pro', system-ui, sans-serif;
+
+  --t-hero:  2.75rem;  --lh-hero:  1.10;
+  --t-h1:    2rem;     --lh-h1:    1.20;
+  --t-h2:    1.5rem;   --lh-h2:    1.30;
+  --t-probe: 1.625rem; --lh-probe: 1.45;   /* the probe question */
+  --t-h3:    1.125rem; --lh-h3:    1.40;
+  --t-body:  1rem;     --lh-body:  1.60;   /* 1.6 FLOOR — Vietnamese diacritics */
+  --t-small: 0.875rem; --lh-small: 1.55;
+  --t-micro: 0.75rem;  --lh-micro: 1.35;
+
+  --track-label: 0.06em;
+
+  /* --- Base ---------------------------------------------------------------- */
+  --bg:        #FFFFFF;
+  --bg-soft:   #F7F9FC;
+  --bg-sunk:   #EEF2F8;
+
+  --ink:       #2B2B3A;   /* blue-black, not pure black */
+  --ink-soft:  #6A6A82;
+  --ink-faint: #9A9AB0;
+
+  --line:        #E4E8F0;
+  --line-strong: #D2D8E4;
+
+  /* --- Core hues. Every fill has a matching -dark for its 3D slab. --------- */
+  --jade:        #14C79B;  --jade-dark:   #0FA07C;  --jade-tint:   #E4FAF4;
+  --gold:        #FFB020;  --gold-dark:   #D98E0C;  --gold-tint:   #FFF4E0;
+  --sky:         #2BB3F0;  --sky-dark:    #1892CC;  --sky-tint:    #E2F4FE;
+  --violet:      #A162F7;  --violet-dark: #8341D9;  --violet-tint: #F1E8FE;
+  --amber:       #FF8A3D;  --amber-dark:  #E06A1F;  --amber-tint:  #FFEEE2;
+
+  --neutral:      #FFFFFF; --neutral-dark: #D2D8E4;
+
+  /* NO RED TOKEN EXISTS. This is deliberate — see FRONTEND.md §2.
+     "Not yet solid" is --amber. Duolingo's own results screens are
+     celebratory regardless of accuracy; GRASP has no wrong-answer moment. */
+
+  /* --- Quadrants: saturated, but MATCHED chroma. No traffic light. --------- */
+  --q-mastery:        #14C79B;
+  --q-hollow:         #FF8A3D;
+  --q-expression-gap: #2BB3F0;
+  --q-needs-support:  #A162F7;
+
+  --q-mastery-tint:        rgba(20, 199, 155, .10);
+  --q-hollow-tint:         rgba(255, 138, 61, .10);
+  --q-expression-gap-tint: rgba(43, 179, 240, .10);
+  --q-needs-support-tint:  rgba(161, 98, 247, .10);
+
+  /* --- Confidence: the one place a sequential ramp is correct ------------- */
+  --conf-high:   #14C79B;
+  --conf-medium: #FFB020;
+  --conf-low:    #9A9AB0;
+
+  /* --- Spacing (4px base) -------------------------------------------------- */
+  --s-1: .25rem;  --s-2: .5rem;   --s-3: .75rem;  --s-4: 1rem;
+  --s-5: 1.25rem; --s-6: 1.5rem;  --s-8: 2rem;    --s-10: 2.5rem;
+  --s-12: 3rem;   --s-16: 4rem;   --s-20: 5rem;
+
+  /* --- Chunky geometry ----------------------------------------------------- */
+  --r-sm:   12px;
+  --r-btn:  16px;
+  --r-card: 20px;
+  --r-panel:28px;
+  --r-pill: 999px;
+
+  --border: 2px;          /* borders are 2px, never hairline */
+  --slab:   4px;          /* 3D button depth — press travel equals this exactly */
+  --tap-min: 52px;
+
+  /* --- Motion: bouncy, not smooth ----------------------------------------- */
+  --ease-bounce: cubic-bezier(.34, 1.56, .64, 1);   /* overshoots — game feel */
+  --ease-out:    cubic-bezier(.22, 1, .36, 1);
+  --dur-press: 60ms;
+  --dur-pop:   280ms;
+  --dur-cel:   600ms;
+
+  /* --- Layout -------------------------------------------------------------- */
+  --w-defend:  680px;
+  --w-content: 1180px;
+  --w-sidebar: 240px;
+}
+
+/* ============================================================================
+   Base
+   ========================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -.01em;
+  text-wrap: balance;
+}
+h1 { font-size: var(--t-h1); line-height: var(--lh-h1); }
+h2 { font-size: var(--t-h2); line-height: var(--lh-h2); font-weight: 700; }
+h3 { font-size: var(--t-h3); line-height: var(--lh-h3); font-weight: 700; }
+p  { margin: 0; }
+
+.num, time, [data-numeric] { font-variant-numeric: tabular-nums; }
+
+:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; border-radius: var(--r-sm); }
+
+/* ============================================================================
+   The 3D push button — the signature component.
+   Solid fill + solid slab beneath. Press travel === slab depth.
+   Never a gradient. Never a blurred shadow.
+   ========================================================================= */
+
+.btn3d {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  min-height: var(--tap-min);
+  padding: 0 var(--s-6);
+  border: 0;
+  border-radius: var(--r-btn);
+  font-family: var(--font-ui);
+  font-size: var(--t-small);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  cursor: pointer;
+  transition: transform var(--dur-press) linear, box-shadow var(--dur-press) linear,
+              filter var(--dur-press) linear;
+  background: var(--jade);
+  color: #fff;
+  box-shadow: 0 var(--slab) 0 var(--jade-dark);
+}
+.btn3d:hover  { filter: brightness(1.05); }
+.btn3d:active { transform: translateY(var(--slab)); box-shadow: 0 0 0 var(--jade-dark); }
+
+.btn3d--gold    { background: var(--gold);   box-shadow: 0 var(--slab) 0 var(--gold-dark);   color: var(--ink); }
+.btn3d--gold:active   { box-shadow: 0 0 0 var(--gold-dark); }
+.btn3d--sky     { background: var(--sky);    box-shadow: 0 var(--slab) 0 var(--sky-dark); }
+.btn3d--sky:active    { box-shadow: 0 0 0 var(--sky-dark); }
+.btn3d--violet  { background: var(--violet); box-shadow: 0 var(--slab) 0 var(--violet-dark); }
+.btn3d--violet:active { box-shadow: 0 0 0 var(--violet-dark); }
+.btn3d--neutral {
+  background: var(--neutral); color: var(--ink-soft);
+  border: var(--border) solid var(--line-strong);
+  box-shadow: 0 var(--slab) 0 var(--neutral-dark);
+}
+.btn3d--neutral:active { box-shadow: 0 0 0 var(--neutral-dark); }
+
+.btn3d[disabled] { background: var(--bg-sunk); color: var(--ink-faint); box-shadow: 0 var(--slab) 0 var(--line-strong); cursor: not-allowed; }
+
+/* NOTE: white on --gold fails AA. Gold buttons always use --ink text. */
+
+/* ============================================================================
+   Cards — flat and physical, not glassy
+   ========================================================================= */
+
+.card {
+  background: var(--bg);
+  border: var(--border) solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: 0 2px 0 var(--line);
+  padding: var(--s-5);
+}
+.card--soft { background: var(--bg-soft); }
+.card--jade { border-color: var(--jade); background: var(--jade-tint); box-shadow: 0 2px 0 var(--jade); }
+.card--gold { border-color: var(--gold); background: var(--gold-tint); box-shadow: 0 2px 0 var(--gold); }
+.card--sky  { border-color: var(--sky);  background: var(--sky-tint);  box-shadow: 0 2px 0 var(--sky); }
+.card--amber{ border-color: var(--amber);background: var(--amber-tint);box-shadow: 0 2px 0 var(--amber); }
+
+/* ============================================================================
+   Pills, labels, stats
+   ========================================================================= */
+
+.label {
+  font-size: var(--t-micro); font-weight: 700;
+  text-transform: uppercase; letter-spacing: var(--track-label);
+  color: var(--ink-faint);
+}
+
+.pill {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  border: var(--border) solid var(--line);
+  background: var(--bg);
+  font-size: var(--t-micro); font-weight: 700;
+  color: var(--ink-soft);
+}
+.pill--jade { border-color: var(--jade); background: var(--jade-tint); color: var(--jade-dark); }
+.pill--gold { border-color: var(--gold); background: var(--gold-tint); color: var(--gold-dark); }
+.pill--sky  { border-color: var(--sky);  background: var(--sky-tint);  color: var(--sky-dark); }
+.pill--amber{ border-color: var(--amber);background: var(--amber-tint);color: var(--amber-dark); }
+
+/* Streak / XP counters */
+.stat-chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-display); font-weight: 800; font-size: var(--t-h3); }
+.stat-chip--streak { color: var(--amber); }
+.stat-chip--xp     { color: var(--gold-dark); }
+
+/* ============================================================================
+   Progress bar (defense session)
+   ========================================================================= */
+
+.progress {
+  height: 16px; border-radius: var(--r-pill);
+  background: var(--bg-sunk);
+  overflow: hidden;
+}
+.progress__fill {
+  height: 100%; border-radius: var(--r-pill);
+  background: var(--jade);
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.10), inset 0 3px 0 rgba(255,255,255,.28);
+  transition: width var(--dur-pop) var(--ease-out);
+}
+
+/* ============================================================================
+   QuoteSpan — the student's own sentence.
+   What makes a probe feel fair rather than arbitrary.
+   ========================================================================= */
+
+.quote {
+  font-size: var(--t-small); line-height: 1.55; font-weight: 500;
+  color: var(--sky-dark);
+  background: var(--sky-tint);
+  border-left: 4px solid var(--sky);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  padding: var(--s-3) var(--s-4);
+}
+
+/* ============================================================================
+   Motion
+   ========================================================================= */
+
+.pop { animation: pop var(--dur-pop) var(--ease-bounce) both; }
+@keyframes pop {
+  from { opacity: 0; transform: scale(.82) translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.rise { animation: rise var(--dur-pop) var(--ease-out) both; }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Celebration stagger */
+.stagger > * { animation: pop var(--dur-pop) var(--ease-bounce) both; }
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 80ms; }
+.stagger > *:nth-child(3) { animation-delay: 160ms; }
+.stagger > *:nth-child(4) { animation-delay: 240ms; }
+
+/* The defense screen stays calm. No celebration DURING a probe —
+   the reward comes after the thinking. */
+[data-screen='defend'] .pop,
+[data-screen='defend'] .stagger > * { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,794 @@
+<title>GRASP — Front-End Design v2</title>
+
+<style>
+/* ==========================================================================
+   GRASP mockups v2 — game-y / Duolingo-inspired. Presentation only, no logic.
+   Tokens mirror ui/tokens.css. Spec: FRONTEND.md
+   NOTE: the artifact CSP blocks font CDNs, so this preview falls back to a
+   system stack. Production self-hosts Baloo 2 + Be Vietnam Pro (FRONTEND.md §1).
+   ========================================================================== */
+
+:root {
+  --font-display: 'Baloo 2', 'Segoe UI', system-ui, sans-serif;
+  --font-ui: 'Be Vietnam Pro', 'Segoe UI', system-ui, sans-serif;
+
+  --bg: #FFFFFF; --bg-soft: #F7F9FC; --bg-sunk: #EEF2F8;
+  --ink: #2B2B3A; --ink-soft: #6A6A82; --ink-faint: #9A9AB0;
+  --line: #E4E8F0; --line-strong: #D2D8E4;
+
+  --jade: #14C79B; --jade-dark: #0FA07C; --jade-tint: #E4FAF4;
+  --gold: #FFB020; --gold-dark: #D98E0C; --gold-tint: #FFF4E0;
+  --sky: #2BB3F0; --sky-dark: #1892CC; --sky-tint: #E2F4FE;
+  --violet: #A162F7; --violet-dark: #8341D9; --violet-tint: #F1E8FE;
+  --amber: #FF8A3D; --amber-dark: #E06A1F; --amber-tint: #FFEEE2;
+  --neutral: #FFFFFF; --neutral-dark: #D2D8E4;
+
+  --q-mastery: #14C79B; --q-hollow: #FF8A3D;
+  --q-expression-gap: #2BB3F0; --q-needs-support: #A162F7;
+
+  --conf-high: #14C79B; --conf-medium: #FFB020; --conf-low: #9A9AB0;
+
+  --r-sm: 12px; --r-btn: 16px; --r-card: 20px; --r-panel: 28px; --r-pill: 999px;
+  --border: 2px; --slab: 4px; --tap-min: 52px;
+  --ease-bounce: cubic-bezier(.34,1.56,.64,1);
+  --ease-out: cubic-bezier(.22,1,.36,1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16171F; --bg-soft: #1D1F2A; --bg-sunk: #24263300;
+    --bg-sunk: #242633;
+    --ink: #F2F3F8; --ink-soft: #A9ADC0; --ink-faint: #7B7F94;
+    --line: #2E3140; --line-strong: #3C4054;
+    --jade-tint: rgba(20,199,155,.14); --gold-tint: rgba(255,176,32,.14);
+    --sky-tint: rgba(43,179,240,.14); --violet-tint: rgba(161,98,247,.14);
+    --amber-tint: rgba(255,138,61,.14);
+    --neutral: #242633; --neutral-dark: #14151C;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16171F; --bg-soft: #1D1F2A; --bg-sunk: #242633;
+  --ink: #F2F3F8; --ink-soft: #A9ADC0; --ink-faint: #7B7F94;
+  --line: #2E3140; --line-strong: #3C4054;
+  --jade-tint: rgba(20,199,155,.14); --gold-tint: rgba(255,176,32,.14);
+  --sky-tint: rgba(43,179,240,.14); --violet-tint: rgba(161,98,247,.14);
+  --amber-tint: rgba(255,138,61,.14);
+  --neutral: #242633; --neutral-dark: #14151C;
+}
+:root[data-theme="light"] {
+  --bg: #FFFFFF; --bg-soft: #F7F9FC; --bg-sunk: #EEF2F8;
+  --ink: #2B2B3A; --ink-soft: #6A6A82; --ink-faint: #9A9AB0;
+  --line: #E4E8F0; --line-strong: #D2D8E4;
+  --jade-tint: #E4FAF4; --gold-tint: #FFF4E0; --sky-tint: #E2F4FE;
+  --violet-tint: #F1E8FE; --amber-tint: #FFEEE2;
+  --neutral: #FFFFFF; --neutral-dark: #D2D8E4;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-ui); font-size: 16px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.num, time { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 3px solid var(--sky); outline-offset: 2px; border-radius: var(--r-sm); }
+
+h1,h2,h3 { margin:0; font-family: var(--font-display); font-weight:800; letter-spacing:-.01em; text-wrap:balance; }
+h1 { font-size: clamp(2rem,5vw,2.75rem); line-height:1.1; }
+h2 { font-size:1.5rem; line-height:1.3; font-weight:700; }
+h3 { font-size:1.125rem; line-height:1.4; font-weight:700; }
+p { margin:0; }
+
+.wrap { max-width:1180px; margin:0 auto; padding:0 24px; }
+.label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); }
+.sec { padding:56px 0; border-top:2px solid var(--line); }
+.sec__head { margin-bottom:28px; }
+.sec__head p { color:var(--ink-soft); margin-top:10px; max-width:64ch; }
+
+/* --- 3D button ------------------------------------------------------- */
+.btn3d {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:var(--tap-min); padding:0 24px; border:0; border-radius:var(--r-btn);
+  font-family:var(--font-ui); font-size:14px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; cursor:pointer;
+  background:var(--jade); color:#fff; box-shadow:0 var(--slab) 0 var(--jade-dark);
+  transition:transform 60ms linear, box-shadow 60ms linear, filter 60ms linear;
+}
+.btn3d:hover { filter:brightness(1.05); }
+.btn3d:active { transform:translateY(var(--slab)); box-shadow:0 0 0 var(--jade-dark); }
+.btn3d--gold { background:var(--gold); box-shadow:0 var(--slab) 0 var(--gold-dark); color:var(--ink); }
+.btn3d--gold:active { box-shadow:0 0 0 var(--gold-dark); }
+.btn3d--sky { background:var(--sky); box-shadow:0 var(--slab) 0 var(--sky-dark); }
+.btn3d--sky:active { box-shadow:0 0 0 var(--sky-dark); }
+.btn3d--violet { background:var(--violet); box-shadow:0 var(--slab) 0 var(--violet-dark); }
+.btn3d--violet:active { box-shadow:0 0 0 var(--violet-dark); }
+.btn3d--neutral {
+  background:var(--neutral); color:var(--ink-soft);
+  border:2px solid var(--line-strong); box-shadow:0 var(--slab) 0 var(--neutral-dark);
+}
+.btn3d--neutral:active { box-shadow:0 0 0 var(--neutral-dark); }
+.btn3d--wide { width:100%; }
+
+/* --- cards ----------------------------------------------------------- */
+.card { background:var(--bg); border:2px solid var(--line); border-radius:var(--r-card); box-shadow:0 2px 0 var(--line); padding:20px; }
+.card--soft { background:var(--bg-soft); }
+.card--jade { border-color:var(--jade); background:var(--jade-tint); box-shadow:0 2px 0 var(--jade); }
+.card--gold { border-color:var(--gold); background:var(--gold-tint); box-shadow:0 2px 0 var(--gold); }
+.card--sky  { border-color:var(--sky);  background:var(--sky-tint);  box-shadow:0 2px 0 var(--sky); }
+.card--amber{ border-color:var(--amber);background:var(--amber-tint);box-shadow:0 2px 0 var(--amber); }
+
+/* --- pills ----------------------------------------------------------- */
+.pill { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:var(--r-pill); border:2px solid var(--line); background:var(--bg); font-size:12px; font-weight:700; color:var(--ink-soft); }
+.pill--jade { border-color:var(--jade); background:var(--jade-tint); color:var(--jade-dark); }
+.pill--gold { border-color:var(--gold); background:var(--gold-tint); color:var(--gold-dark); }
+.pill--amber{ border-color:var(--amber);background:var(--amber-tint);color:var(--amber-dark); }
+.stat-chip { display:inline-flex; align-items:center; gap:6px; font-family:var(--font-display); font-weight:800; font-size:18px; }
+
+/* --- progress -------------------------------------------------------- */
+.progress { height:16px; border-radius:var(--r-pill); background:var(--bg-sunk); overflow:hidden; flex:1; }
+.progress__fill { height:100%; border-radius:var(--r-pill); background:var(--jade); box-shadow:inset 0 -3px 0 rgba(0,0,0,.10), inset 0 3px 0 rgba(255,255,255,.28); }
+
+/* --- quote ----------------------------------------------------------- */
+.quote { font-size:14px; line-height:1.55; font-weight:500; color:var(--sky-dark); background:var(--sky-tint); border-left:4px solid var(--sky); border-radius:0 var(--r-sm) var(--r-sm) 0; padding:12px 16px; }
+
+/* --- device ---------------------------------------------------------- */
+.device { background:var(--bg-soft); border:2px solid var(--line); border-radius:var(--r-panel); padding:10px; }
+.device__screen { background:var(--bg); border-radius:20px; overflow:hidden; border:2px solid var(--line); }
+.device__label { font-size:12px; color:var(--ink-faint); margin:10px 4px 0; font-weight:600; }
+
+/* --- defend ---------------------------------------------------------- */
+.defend { padding:20px 22px 22px; min-height:470px; display:flex; flex-direction:column; }
+.defend__top { display:flex; align-items:center; gap:14px; margin-bottom:26px; }
+.xbtn { width:32px; height:32px; border-radius:50%; border:2px solid var(--line-strong); background:var(--bg); color:var(--ink-faint); font-size:15px; line-height:1; display:grid; place-items:center; cursor:pointer; flex:none; }
+.timer { font-size:14px; font-weight:700; color:var(--ink-faint); font-variant-numeric:tabular-nums; flex:none; }
+.probe { font-size:1.45rem; line-height:1.45; font-weight:600; margin-top:16px; letter-spacing:-.01em; }
+.followup { margin-top:14px; padding-left:16px; border-left:4px solid var(--line-strong); color:var(--ink-soft); font-size:15px; }
+.answer { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:auto; padding-top:26px; }
+.answer .btn3d { flex-direction:column; gap:4px; min-height:78px; padding:12px; }
+.answer .btn3d small { font-size:10px; font-weight:600; text-transform:none; letter-spacing:0; opacity:.85; }
+.glyph { font-size:20px; line-height:1; }
+
+/* --- concept map ----------------------------------------------------- */
+.node { width:60px; height:60px; border-radius:50%; display:grid; place-items:center; font-size:22px; border:0; cursor:pointer; }
+.node--done { background:var(--jade); box-shadow:0 5px 0 var(--jade-dark); color:#fff; }
+.node--gold { background:var(--gold); box-shadow:0 5px 0 var(--gold-dark); color:var(--ink); }
+.node--now  { background:var(--sky); box-shadow:0 5px 0 var(--sky-dark); color:#fff; }
+.node--lock { background:var(--bg-sunk); box-shadow:0 5px 0 var(--line-strong); color:var(--ink-faint); }
+.node-label { font-size:11px; font-weight:700; color:var(--ink-soft); text-align:center; margin-top:8px; max-width:96px; line-height:1.3; }
+.map-row { display:flex; flex-direction:column; align-items:center; }
+
+/* --- celebration ----------------------------------------------------- */
+.cel { padding:26px 22px; text-align:center; min-height:470px; display:flex; flex-direction:column; align-items:center; }
+.xp-big { font-family:var(--font-display); font-size:3.25rem; font-weight:800; color:var(--gold-dark); line-height:1; font-variant-numeric:tabular-nums; }
+
+/* --- matrix ---------------------------------------------------------- */
+.matrix-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:22px; align-items:start; }
+.legend__row { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border-radius:var(--r-sm); background:var(--bg-soft); border:2px solid var(--line); margin-bottom:8px; }
+.legend__dot { width:12px; height:12px; border-radius:50%; margin-top:5px; flex:none; }
+.legend__name { font-size:13px; font-weight:700; }
+.legend__act { font-size:12px; color:var(--ink-soft); }
+.stat { display:flex; justify-content:space-between; padding:9px 0; border-bottom:2px solid var(--line); font-size:13px; font-weight:500; }
+.stat:last-child { border-bottom:0; }
+.stat b { font-variant-numeric:tabular-nums; }
+
+/* --- evidence -------------------------------------------------------- */
+.ev { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:20px; align-items:start; }
+.turn { padding:14px 0; border-bottom:2px solid var(--line); }
+.turn:last-child { border-bottom:0; }
+.turn__meta { display:flex; gap:10px; align-items:center; margin-bottom:8px; font-size:11px; font-weight:700; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; }
+.turn__q { font-size:14px; font-weight:600; margin-bottom:8px; }
+.turn__a { font-size:14px; color:var(--ink-soft); }
+mark { background:var(--sky-tint); color:var(--sky-dark); padding:1px 4px; border-radius:5px; font-weight:600; }
+.dim { margin-bottom:14px; }
+.dim__top { display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:6px; }
+.dim__val { font-variant-numeric:tabular-nums; font-weight:800; }
+.dim__track { height:12px; border-radius:var(--r-pill); background:var(--bg-sunk); overflow:hidden; }
+.dim__fill { height:100%; border-radius:var(--r-pill); box-shadow:inset 0 -2px 0 rgba(0,0,0,.10); }
+.step { width:38px; height:38px; border-radius:12px; border:2px solid var(--line-strong); background:var(--bg); color:var(--ink-soft); cursor:pointer; font-size:18px; font-weight:700; line-height:1; display:grid; place-items:center; box-shadow:0 3px 0 var(--neutral-dark); }
+.step:active { transform:translateY(3px); box-shadow:0 0 0 var(--neutral-dark); }
+.composite { display:flex; align-items:baseline; gap:8px; }
+.composite b { font-family:var(--font-display); font-size:2.5rem; font-weight:800; font-variant-numeric:tabular-nums; line-height:1; }
+
+/* --- swatches -------------------------------------------------------- */
+.swatches { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+.sw { border-radius:var(--r-sm); overflow:hidden; border:2px solid var(--line); }
+.sw__chip { height:64px; }
+.sw__meta { padding:9px 11px; background:var(--bg); font-size:11px; }
+.sw__name { font-weight:700; }
+.sw__hex { color:var(--ink-faint); font-variant-numeric:tabular-nums; }
+
+.inv { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
+.inv__item { padding:14px 16px; border-radius:var(--r-sm); background:var(--bg-soft); border:2px solid var(--line); }
+.inv__name { font-size:13px; font-weight:700; margin-bottom:4px; }
+.inv__desc { font-size:12px; color:var(--ink-soft); }
+
+.note { padding:14px 16px; border-radius:var(--r-sm); background:var(--sky-tint); border:2px solid var(--sky); font-size:13px; color:var(--ink-soft); }
+.note b { color:var(--ink); }
+.note--amber { background:var(--amber-tint); border-color:var(--amber); }
+.note--jade { background:var(--jade-tint); border-color:var(--jade); }
+
+@media (max-width:900px) { .matrix-grid, .ev { grid-template-columns:1fr; } }
+@media (max-width:560px) { .answer { grid-template-columns:1fr; } .sec { padding:40px 0; } }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; } }
+</style>
+
+<!-- ===================== NGHÉ — the mascot ===================== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="nghe" viewBox="0 0 120 110">
+    <!-- horns -->
+    <path d="M28 40 C10 34 6 18 16 10 C20 22 30 26 34 30 Z" fill="#F0DFBC"/>
+    <path d="M92 40 C110 34 114 18 104 10 C100 22 90 26 86 30 Z" fill="#F0DFBC"/>
+    <!-- ears -->
+    <ellipse cx="24" cy="54" rx="11" ry="8" fill="#8FA9C9"/>
+    <ellipse cx="96" cy="54" rx="11" ry="8" fill="#8FA9C9"/>
+    <!-- head -->
+    <ellipse cx="60" cy="60" rx="38" ry="35" fill="#A8C0D8"/>
+    <!-- tuft -->
+    <path d="M52 28 q8 -12 16 0 q-8 -4 -16 0 Z" fill="#8FA9C9"/>
+    <!-- eyes -->
+    <circle cx="46" cy="56" r="6.5" fill="#2B2B3A"/>
+    <circle cx="74" cy="56" r="6.5" fill="#2B2B3A"/>
+    <circle cx="48" cy="53.5" r="2.2" fill="#fff"/>
+    <circle cx="76" cy="53.5" r="2.2" fill="#fff"/>
+    <!-- snout -->
+    <ellipse cx="60" cy="76" rx="20" ry="14" fill="#DCE8F4"/>
+    <ellipse cx="53" cy="74" rx="2.6" ry="3.4" fill="#8FA9C9"/>
+    <ellipse cx="67" cy="74" rx="2.6" ry="3.4" fill="#8FA9C9"/>
+    <path d="M53 83 q7 5 14 0" stroke="#8FA9C9" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+
+  <!-- ===================== HEADER ===================== -->
+  <header style="padding:52px 0 8px;">
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
+      <svg width="64" height="60"><use href="#nghe"/></svg>
+      <div>
+        <div class="label">GRASP · Front-end design v2.0</div>
+        <h1 style="margin-top:4px;">Vấn đáp, nhưng vui</h1>
+      </div>
+    </div>
+    <p style="color:var(--ink-soft); max-width:64ch; font-size:17px;">
+      Duolingo is the most successful consumer application of <b style="color:var(--ink)">retrieval
+      practice</b> ever shipped — the exact learning mechanism GRASP is built on. If the core
+      loop really is practice, it should feel like practice.
+    </p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:22px;">
+      <span class="pill pill--jade">◆ 3D push buttons</span>
+      <span class="pill pill--gold">★ XP · chuỗi ngày · huy hiệu</span>
+      <span class="pill pill--amber">✦ Không có màu đỏ</span>
+      <span class="pill">Nghé — linh vật</span>
+    </div>
+  </header>
+
+  <!-- ===================== 1. HOME ===================== -->
+  <section class="sec">
+    <div class="sec__head">
+      <div class="label">Màn hình 1 · /</div>
+      <h2>Trang chủ — Bản đồ kiến thức</h2>
+      <p>
+        Duolingo's skill path, adapted. Each node is a concept the student has proven they can
+        explain (D2 ≥ 3.5). This is the business plan's <b>Understanding Portfolio</b> made
+        visible — and a better artefact for a scholarship application than a transcript of grades.
+      </p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,320px) minmax(0,1fr); gap:24px; align-items:start;">
+      <div>
+        <div class="device">
+          <div class="device__screen">
+            <div style="padding:18px 20px;">
+              <!-- top bar -->
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:22px;">
+                <span class="stat-chip" style="color:var(--amber)">🔥 <span class="num">12</span></span>
+                <span class="stat-chip" style="color:var(--gold-dark)">★ <span class="num">1 240</span></span>
+                <span class="pill pill--gold">Vàng</span>
+              </div>
+
+              <!-- concept map -->
+              <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                <div class="map-row" style="transform:translateX(46px)">
+                  <button class="node node--lock">🔒</button>
+                  <div class="node-label">Bẫy thu nhập trung bình</div>
+                </div>
+                <div style="width:3px; height:16px; background:var(--line); border-radius:2px;"></div>
+                <div class="map-row" style="transform:translateX(-38px)">
+                  <button class="node node--now">▶</button>
+                  <div class="node-label" style="color:var(--sky-dark)">Vai trò của FDI</div>
+                </div>
+                <div style="width:3px; height:16px; background:var(--jade); border-radius:2px;"></div>
+                <div class="map-row" style="transform:translateX(30px)">
+                  <button class="node node--gold">★</button>
+                  <div class="node-label">Đổi Mới 1986</div>
+                </div>
+                <div style="width:3px; height:16px; background:var(--jade); border-radius:2px;"></div>
+                <div class="map-row" style="transform:translateX(-30px)">
+                  <button class="node node--done">✓</button>
+                  <div class="node-label">Kinh tế kế hoạch hoá</div>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:10px; margin-top:22px; padding:12px; border-radius:var(--r-card); background:var(--bg-soft); border:2px solid var(--line);">
+                <svg width="46" height="42" style="flex:none"><use href="#nghe"/></svg>
+                <div style="font-size:13px; font-weight:600; line-height:1.4;">
+                  Còn 1 bài nữa là bạn mở khoá <b style="color:var(--sky-dark)">Vai trò của FDI</b>!
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="device__label">Mobile-first — students live on phones</div>
+      </div>
+
+      <div style="display:grid; gap:12px;">
+        <div class="card card--jade">
+          <h3 style="margin-bottom:6px;">Kinh tế phát triển · Bài luận 2</h3>
+          <p style="font-size:13px; color:var(--ink-soft); margin-bottom:14px;">Hạn nộp: 3 ngày nữa · +50 ★</p>
+          <button class="btn3d btn3d--wide">Bắt đầu vấn đáp</button>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:6px;">Xã hội học đô thị · Tiểu luận 1</h3>
+          <p style="font-size:13px; color:var(--ink-soft); margin-bottom:14px;">Chưa nộp bài</p>
+          <button class="btn3d btn3d--neutral btn3d--wide">Nộp bài</button>
+        </div>
+        <div class="note note--jade">
+          <b>Every reward is earned by showing up, never by scoring well.</b><br>
+          XP for completing a defense. Streaks for turning up. Leagues ranked on XP —
+          effort — never on understanding scores. This is exactly how Duolingo works,
+          and it is what makes gamification safe on a graded assessment.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 2. DEFEND ===================== -->
+  <section class="sec">
+    <div class="sec__head">
+      <div class="label">Màn hình 2 · /defend/[sessionId]</div>
+      <h2>Phiên vấn đáp</h2>
+      <p>
+        Bright palette and chunky buttons — but no confetti, no mascot, no bouncing timer.
+        A student mid-thought under a running clock does not need a dancing buffalo.
+        The reward comes after the thinking.
+      </p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,300px); gap:24px; align-items:start;">
+      <div>
+        <div class="device">
+          <div class="device__screen" data-screen="defend">
+            <div class="defend">
+              <div class="defend__top">
+                <button class="xbtn">✕</button>
+                <div class="progress"><div class="progress__fill" style="width:58%"></div></div>
+                <time class="timer">06:12</time>
+              </div>
+
+              <div class="quote">
+                “Chính sách Đổi Mới năm 1986 là nguyên nhân chính dẫn đến tăng trưởng kinh tế
+                vượt bậc của Việt Nam trong thập niên 1990.”
+              </div>
+
+              <p class="probe">
+                Nếu dòng vốn FDI đầu thập niên 1990 không xuất hiện, lập luận của bạn về vai trò
+                quyết định của Đổi Mới có còn đứng vững không?
+              </p>
+              <p class="followup">↳ Bạn vừa nói “thể chế thay đổi trước”. Hãy chỉ ra một cơ chế cụ thể.</p>
+
+              <div class="answer">
+                <button class="btn3d btn3d--sky">
+                  <span class="glyph">◎</span> Giữ để nói
+                  <small>Dùng micro</small>
+                </button>
+                <button class="btn3d btn3d--violet">
+                  <span class="glyph">▭</span> Gõ trả lời
+                  <small>Không cần micro</small>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="device__label">680px desktop · identical stack on mobile</div>
+      </div>
+
+      <div style="display:grid; gap:12px;">
+        <div class="note">
+          <b>Equal weight is a hard requirement.</b><br>
+          Voice and typed are the same 3D button, the same size, the same scoring. A student
+          who never speaks must not be able to tell they took a different path. (FR-302, NFR-8)
+        </div>
+        <div class="note note--amber">
+          <b>The timer never turns red.</b><br>
+          Game energy lives in the buttons and the celebration — never in time pressure.
+          There is no red token anywhere in this design system.
+        </div>
+        <div class="note">
+          <b>Progress bar replaces v1's hidden turn count.</b><br>
+          Duolingo's motivational win beats the mild framing concern. The bar shows how far
+          through you are — not what's coming next.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 3. CELEBRATION ===================== -->
+  <section class="sec">
+    <div class="sec__head">
+      <div class="label">Màn hình 3 · /defend/[sessionId]/complete</div>
+      <h2>Hoàn thành!</h2>
+      <p>
+        Duolingo's lesson-complete screen. Celebrated for <b>finishing</b>; informed of the score
+        second. Duolingo's own results screens are celebratory regardless of accuracy — which is
+        precisely why GRASP needs no red.
+      </p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,340px) minmax(0,1fr); gap:24px; align-items:start;">
+      <div class="device">
+        <div class="device__screen">
+          <div class="cel">
+            <!-- confetti -->
+            <svg width="100%" height="46" viewBox="0 0 300 46" aria-hidden="true">
+              <rect x="30" y="8" width="8" height="8" rx="2" fill="var(--gold)" transform="rotate(20 34 12)"/>
+              <rect x="76" y="20" width="7" height="7" rx="2" fill="var(--sky)" transform="rotate(-25 79 23)"/>
+              <rect x="128" y="4" width="9" height="9" rx="2" fill="var(--violet)" transform="rotate(35 132 8)"/>
+              <rect x="186" y="18" width="7" height="7" rx="2" fill="var(--jade)" transform="rotate(-15 189 21)"/>
+              <rect x="232" y="6" width="8" height="8" rx="2" fill="var(--amber)" transform="rotate(28 236 10)"/>
+              <circle cx="58" cy="32" r="4" fill="var(--jade)"/>
+              <circle cx="160" cy="30" r="4" fill="var(--gold)"/>
+              <circle cx="266" cy="26" r="4" fill="var(--sky)"/>
+            </svg>
+
+            <svg width="96" height="88" style="margin:-4px 0 10px"><use href="#nghe"/></svg>
+            <h2 style="font-size:1.75rem;">Tuyệt vời!</h2>
+            <p style="font-size:14px; color:var(--ink-soft); margin-top:6px;">Bạn đã giải thích xong bài của mình</p>
+
+            <div class="xp-big" style="margin:20px 0 4px;">+80 ★</div>
+            <div class="label">Điểm kinh nghiệm</div>
+
+            <div style="display:flex; gap:10px; margin:22px 0 18px; flex-wrap:wrap; justify-content:center;">
+              <span class="pill pill--amber">🔥 Chuỗi 12 ngày</span>
+              <span class="pill pill--jade">✓ Mở khoá: FDI</span>
+              <span class="pill pill--gold">★ Huy hiệu mới</span>
+            </div>
+
+            <div class="card card--soft" style="width:100%; padding:14px;">
+              <div class="label" style="margin-bottom:4px;">Điểm hiểu bài</div>
+              <div class="composite" style="justify-content:center;">
+                <b class="num" style="color:var(--amber)">2.1</b><span style="color:var(--ink-faint); font-size:14px;">/ 5.0</span>
+              </div>
+            </div>
+
+            <button class="btn3d btn3d--wide" style="margin-top:16px;">Xem phản hồi</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; gap:12px;">
+        <div class="note note--jade">
+          <b>The score sits below the celebration, not above it.</b><br>
+          A student who tried and scored 2.1 still earned 80 XP, extended a 12-day streak,
+          and unlocked a concept. That is the learning-first thesis rendered in UI.
+        </div>
+        <div class="note note--amber">
+          <b>❤️ Hearts are the one Duolingo mechanic we drop.</b><br>
+          Running out of hearts in Duolingo ends a free practice session — reload tomorrow,
+          nothing lost. Running out mid-defense would end a <b>graded assessment</b>. There is
+          no defensible version of "you failed your coursework because you used five hearts."
+          Every other mechanic survives intact.
+        </div>
+        <div class="note">
+          <b>Nghé is never disappointed.</b><br>
+          A baby water buffalo — <i>trâu</i>, the Vietnamese icon of diligence
+          (<i>chăm chỉ như trâu</i>). Culturally specific rather than another owl. Nghé has
+          an <code>encourage</code> state but never a sad or disapproving one: an accusing
+          mascot is still an accusation.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 4. FEEDBACK ===================== -->
+  <section class="sec">
+    <div class="sec__head">
+      <div class="label">Màn hình 4 · /feedback/[sessionId]</div>
+      <h2>Phản hồi</h2>
+      <p>Three chunky cards, each quoting the student's own words back. No quadrant label is ever shown to a student.</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,280px); gap:22px; align-items:start;">
+      <div style="display:grid; gap:12px;">
+        <div class="card card--jade">
+          <div class="label" style="color:var(--jade-dark); margin-bottom:8px;">✓ Bạn giải thích tốt</div>
+          <p style="font-size:15px;">
+            Bạn nêu rõ bối cảnh trước 1986 và mô tả chính xác điều kiện kinh tế thời kỳ đó.
+            Khi được hỏi về khu vực tư nhân, bạn trả lời trôi chảy bằng lời của mình.
+          </p>
+        </div>
+        <div class="card card--amber">
+          <div class="label" style="color:var(--amber-dark); margin-bottom:8px;">◐ Chưa vững</div>
+          <p style="font-size:15px;">
+            Bạn viết Đổi Mới là “nguyên nhân chính”, nhưng khi được hỏi cơ chế cụ thể nối từ
+            cải cách thể chế đến tăng trưởng, bạn chưa chỉ ra được. Một lập luận nhân quả cần
+            nêu được bước trung gian.
+          </p>
+        </div>
+        <div class="card card--sky">
+          <div class="label" style="color:var(--sky-dark); margin-bottom:8px;">→ Nên xem lại</div>
+          <p style="font-size:15px;">
+            Hai khái niệm đáng đọc lại: <b>vai trò của FDI 1991–1997</b> và
+            <b>cách đọc số liệu tăng trưởng GDP</b>.
+          </p>
+        </div>
+      </div>
+
+      <div style="display:grid; gap:12px;">
+        <div class="card" style="text-align:center;">
+          <svg width="72" height="66"><use href="#nghe"/></svg>
+          <div class="label" style="margin:8px 0 4px;">Điểm hiểu bài</div>
+          <div class="composite" style="justify-content:center;">
+            <b class="num" style="color:var(--amber)">2.1</b><span style="color:var(--ink-faint); font-size:14px;">/ 5.0</span>
+          </div>
+          <div style="margin-top:10px;"><span class="pill pill--gold">± 0.6 · tin cậy TB</span></div>
+        </div>
+        <div class="note note--amber">
+          <b>Không bao giờ có “sai”.</b><br>
+          The vocabulary is <i>chưa vững</i> (not yet solid) and <i>nên trao đổi thêm</i>.
+          The words <i>gian lận</i>, <i>đạo văn</i>, <i>AI</i> appear nowhere a user can see —
+          enforced by a build-failing test.
+        </div>
+        <button class="btn3d btn3d--neutral btn3d--wide">Tôi nghĩ điểm này chưa đúng</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 5. MATRIX (NOT GAMIFIED) ===================== -->
+  <section class="sec">
+    <div class="sec__head">
+      <div class="label">Màn hình 5 · /assignments/[id]/matrix · giảng viên</div>
+      <h2>Ma trận hiểu bài</h2>
+      <p>
+        <b>Gamify the student, not the lecturer</b> — exactly as Duolingo for Schools does.
+        New palette for visual coherence; zero game mechanics. No XP, no streaks, no Nghé,
+        no confetti. A lecturer grading 90 students wants density, not delight.
+      </p>
+    </div>
+
+    <div class="matrix-grid">
+      <div class="card" style="padding:18px;">
+        <svg viewBox="0 0 420 380" style="width:100%; height:auto; display:block;" role="img"
+             aria-label="Ma trận: chất lượng bài viết trục ngang, mức độ hiểu bài trục dọc">
+          <rect x="52" y="24" width="171" height="146" fill="var(--q-expression-gap)" opacity=".10"/>
+          <rect x="223" y="24" width="171" height="146" fill="var(--q-mastery)" opacity=".10"/>
+          <rect x="52" y="170" width="171" height="146" fill="var(--q-needs-support)" opacity=".10"/>
+          <rect x="223" y="170" width="171" height="146" fill="var(--q-hollow)" opacity=".10"/>
+          <line x1="52" y1="316" x2="394" y2="316" stroke="var(--line-strong)" stroke-width="2"/>
+          <line x1="52" y1="24" x2="52" y2="316" stroke="var(--line-strong)" stroke-width="2"/>
+          <line x1="223" y1="24" x2="223" y2="316" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 5"/>
+          <line x1="52" y1="170" x2="394" y2="170" stroke="var(--line)" stroke-width="2" stroke-dasharray="4 5"/>
+          <text x="64" y="42" font-size="10" font-weight="800" fill="var(--q-expression-gap)" letter-spacing=".05em">KHOẢNG CÁCH DIỄN ĐẠT</text>
+          <text x="235" y="42" font-size="10" font-weight="800" fill="var(--q-mastery)" letter-spacing=".05em">THÀNH THẠO</text>
+          <text x="64" y="188" font-size="10" font-weight="800" fill="var(--q-needs-support)" letter-spacing=".05em">CẦN HỖ TRỢ</text>
+          <text x="235" y="188" font-size="10" font-weight="800" fill="var(--q-hollow)" letter-spacing=".05em">RỖNG</text>
+          <g stroke="var(--bg)" stroke-width="2">
+            <circle cx="96" cy="88" r="6" fill="var(--q-expression-gap)"/>
+            <circle cx="132" cy="118" r="6" fill="var(--q-expression-gap)"/>
+            <circle cx="168" cy="72" r="6" fill="var(--q-expression-gap)"/>
+            <circle cx="112" cy="142" r="6" fill="var(--q-expression-gap)"/>
+            <circle cx="262" cy="76" r="6" fill="var(--q-mastery)"/>
+            <circle cx="298" cy="102" r="6" fill="var(--q-mastery)"/>
+            <circle cx="330" cy="64" r="6" fill="var(--q-mastery)"/>
+            <circle cx="352" cy="96" r="6" fill="var(--q-mastery)"/>
+            <circle cx="286" cy="134" r="6" fill="var(--q-mastery)"/>
+            <circle cx="318" cy="122" r="6" fill="var(--q-mastery)"/>
+            <circle cx="366" cy="130" r="6" fill="var(--q-mastery)"/>
+            <circle cx="248" cy="112" r="6" fill="var(--q-mastery)"/>
+            <circle cx="344" cy="150" r="6" fill="var(--q-mastery)"/>
+            <circle cx="88" cy="240" r="6" fill="var(--q-needs-support)"/>
+            <circle cx="140" cy="272" r="6" fill="var(--q-needs-support)"/>
+            <circle cx="118" cy="212" r="6" fill="var(--q-needs-support)"/>
+            <circle cx="288" cy="228" r="6" fill="var(--q-hollow)"/>
+            <circle cx="336" cy="252" r="6" fill="var(--q-hollow)"/>
+            <circle cx="262" cy="266" r="6" fill="var(--q-hollow)"/>
+            <circle cx="358" cy="212" r="6" fill="var(--q-hollow)"/>
+          </g>
+          <text x="223" y="346" font-size="10" font-weight="700" fill="var(--ink-faint)" text-anchor="middle" letter-spacing=".06em">CHẤT LƯỢNG BÀI VIẾT →</text>
+          <text x="18" y="170" font-size="10" font-weight="700" fill="var(--ink-faint)" text-anchor="middle" transform="rotate(-90 18 170)" letter-spacing=".06em">MỨC ĐỘ HIỂU BÀI →</text>
+        </svg>
+      </div>
+
+      <div>
+        <div class="legend__row"><i class="legend__dot" style="background:var(--q-mastery)"></i>
+          <div><div class="legend__name">Thành thạo · 9</div><div class="legend__act">Hiểu sâu, viết tốt — ghi nhận</div></div></div>
+        <div class="legend__row"><i class="legend__dot" style="background:var(--q-expression-gap)"></i>
+          <div><div class="legend__name">Khoảng cách diễn đạt · 4</div><div class="legend__act">Hiểu bài, diễn đạt yếu — hỗ trợ kỹ năng viết</div></div></div>
+        <div class="legend__row"><i class="legend__dot" style="background:var(--q-hollow)"></i>
+          <div><div class="legend__name">Rỗng · 4</div><div class="legend__act">Nên trao đổi trực tiếp</div></div></div>
+        <div class="legend__row"><i class="legend__dot" style="background:var(--q-needs-support)"></i>
+          <div><div class="legend__name">Cần hỗ trợ · 3</div><div class="legend__act">Can thiệp sớm</div></div></div>
+
+        <div class="card card--soft" style="margin-top:14px; padding:14px 16px;">
+          <div class="stat"><span>Đã hoàn thành</span><b class="num">20 / 24</b></div>
+          <div class="stat"><span>Điểm hiểu bài TB</span><b class="num">3.6</b></div>
+          <div class="stat"><span>Thời lượng TB</span><b class="num">7:24</b></div>
+          <div class="stat"><span>Độ tin cậy thấp</span><b class="num">2</b></div>
+        </div>
+
+        <div class="note note--amber" style="margin-top:12px;">
+          <b>Brighter, but still matched chroma.</b><br>
+          No red, no traffic light. Squint and no quadrant jumps out — four hues say
+          <i>different</i>, not <i>worse</i>. An alarm-red “Rỗng” dot would turn this into
+          the artefact GRASP exists to replace.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 6. EVIDENCE (NOT GAMIFIED) ===================== -->
+  <section class="sec">
+    <div class="sec__head">
+      <div class="label">Màn hình 6 · /sessions/[id] · giảng viên</div>
+      <h2>Hồ sơ minh chứng</h2>
+      <p>The override control is the easiest action on the page — it writes the calibration dataset, so friction here is a strategic cost, not a UX detail.</p>
+    </div>
+
+    <div class="ev">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <h3>Nguyễn Minh Anh</h3>
+          <span class="pill pill--amber">Rỗng</span>
+        </div>
+        <p style="font-size:12px; color:var(--ink-faint); font-weight:600; margin-bottom:6px;">Kinh tế phát triển · Bài luận 2 · 07:41</p>
+
+        <div class="turn">
+          <div class="turn__meta"><span>Câu 1</span><span>◎ giọng nói</span><span>42s</span></div>
+          <div class="turn__q">Cơ chế nào dẫn từ cải cách thể chế đến tăng trưởng?</div>
+          <div class="turn__a">“Ừm… tại vì <mark>chính sách mở cửa</mark> nên kinh tế phát triển. Em nghĩ là do nhà nước cho phép tư nhân…”</div>
+        </div>
+        <div class="turn">
+          <div class="turn__meta"><span>Câu 2</span><span>◎ giọng nói</span><span>28s</span></div>
+          <div class="turn__q">Nếu không có FDI, lập luận của bạn có còn đứng vững không?</div>
+          <div class="turn__a">“Em… em nghĩ là vẫn đúng ạ. Tại vì Đổi Mới quan trọng.”</div>
+        </div>
+        <div class="turn">
+          <div class="turn__meta"><span>Câu 3</span><span>▭ gõ phím</span><span>1:04</span></div>
+          <div class="turn__q">Số liệu 8,2% đến từ đâu, và nó đo cái gì?</div>
+          <div class="turn__a">“Em lấy từ tài liệu ạ. Đó là <mark>tăng trưởng GDP</mark>.”</div>
+        </div>
+      </div>
+
+      <div style="display:grid; gap:12px;">
+        <div class="card">
+          <div class="label" style="margin-bottom:6px;">Điểm hiểu bài</div>
+          <div class="composite"><b class="num" style="color:var(--amber)">2.1</b><span style="color:var(--ink-faint); font-size:14px;">/ 5.0</span></div>
+          <div style="margin:10px 0 18px;"><span class="pill pill--gold">± 0.6 · tin cậy trung bình</span></div>
+
+          <div class="dim"><div class="dim__top"><span>D1 · Nhắc lại</span><span class="dim__val num">3.0</span></div>
+            <div class="dim__track"><i class="dim__fill" style="width:60%; background:var(--jade)"></i></div></div>
+          <div class="dim"><div class="dim__top"><span>D2 · Giải thích</span><span class="dim__val num">2.0</span></div>
+            <div class="dim__track"><i class="dim__fill" style="width:40%; background:var(--amber)"></i></div></div>
+          <div class="dim"><div class="dim__top"><span>D3 · Vận dụng</span><span class="dim__val num">1.5</span></div>
+            <div class="dim__track"><i class="dim__fill" style="width:30%; background:var(--amber)"></i></div></div>
+          <div class="dim"><div class="dim__top"><span>D4 · Đánh giá</span><span class="dim__val num">1.5</span></div>
+            <div class="dim__track"><i class="dim__fill" style="width:30%; background:var(--amber)"></i></div></div>
+          <div class="dim" style="margin-bottom:0;"><div class="dim__top"><span>D5 · Siêu nhận thức</span><span class="dim__val num">2.5</span></div>
+            <div class="dim__track"><i class="dim__fill" style="width:50%; background:var(--gold)"></i></div></div>
+        </div>
+
+        <div class="card card--soft">
+          <div class="label" style="margin-bottom:12px;">Giảng viên điều chỉnh</div>
+          <div style="display:grid; gap:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:13px; font-weight:600;">D2 · Giải thích</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button class="step">−</button><b class="num" style="min-width:30px; text-align:center;">2.0</b><button class="step">+</button>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:13px; font-weight:600;">D3 · Vận dụng</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button class="step">−</button><b class="num" style="min-width:30px; text-align:center;">1.5</b><button class="step">+</button>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:12px; color:var(--ink-faint); margin-top:12px; font-weight:600;">Lưu tự động · không cần xác nhận</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 7. SYSTEM ===================== -->
+  <section class="sec">
+    <div class="sec__head">
+      <div class="label">Hệ thống</div>
+      <h2>Tokens</h2>
+      <p>Full definitions in <code>ui/tokens.css</code>. Every fill has a matching <code>-dark</code> for its 3D slab.</p>
+    </div>
+
+    <div style="display:grid; gap:26px;">
+      <div>
+        <div class="label" style="margin-bottom:10px;">Bảng màu — không có màu đỏ</div>
+        <div class="swatches">
+          <div class="sw"><div class="sw__chip" style="background:#14C79B"></div><div class="sw__meta"><div class="sw__name">jade</div><div class="sw__hex">#14C79B</div></div></div>
+          <div class="sw"><div class="sw__chip" style="background:#FFB020"></div><div class="sw__meta"><div class="sw__name">gold</div><div class="sw__hex">#FFB020</div></div></div>
+          <div class="sw"><div class="sw__chip" style="background:#2BB3F0"></div><div class="sw__meta"><div class="sw__name">sky</div><div class="sw__hex">#2BB3F0</div></div></div>
+          <div class="sw"><div class="sw__chip" style="background:#A162F7"></div><div class="sw__meta"><div class="sw__name">violet</div><div class="sw__hex">#A162F7</div></div></div>
+          <div class="sw"><div class="sw__chip" style="background:#FF8A3D"></div><div class="sw__meta"><div class="sw__name">amber · “chưa vững”</div><div class="sw__hex">#FF8A3D</div></div></div>
+          <div class="sw"><div class="sw__chip" style="background:#2B2B3A"></div><div class="sw__meta"><div class="sw__name">ink</div><div class="sw__hex">#2B2B3A</div></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="label" style="margin-bottom:10px;">Nút 3D — nhấn để thử</div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; padding:6px 0 10px;">
+          <button class="btn3d">Bắt đầu</button>
+          <button class="btn3d btn3d--gold">Nhận thưởng</button>
+          <button class="btn3d btn3d--sky">Giữ để nói</button>
+          <button class="btn3d btn3d--violet">Gõ trả lời</button>
+          <button class="btn3d btn3d--neutral">Bỏ qua</button>
+          <button class="btn3d" disabled>Chưa mở</button>
+        </div>
+        <div class="note">
+          <b>Press travel equals slab depth exactly.</b> Solid colour beneath, never a blur.
+          Never a gradient fill. <b>White on gold fails AA</b> — gold buttons use ink text.
+        </div>
+      </div>
+
+      <div>
+        <div class="label" style="margin-bottom:10px;">Thang chữ</div>
+        <div class="card">
+          <div style="display:grid; gap:14px;">
+            <div style="font-family:var(--font-display); font-size:2.75rem; font-weight:800; line-height:1.1;">Tuyệt vời! <span style="font-family:var(--font-ui); font-size:12px; color:var(--ink-faint); font-weight:600;">hero · 44/800 · Baloo 2</span></div>
+            <div style="font-size:1.625rem; font-weight:600; line-height:1.45;">Nếu không có FDI, lập luận còn đứng vững không? <span style="font-size:12px; color:var(--ink-faint);">probe · 26/600</span></div>
+            <div style="font-size:1rem; line-height:1.6; color:var(--ink-soft);">Thân bài — giãn dòng tối thiểu 1.6 vì tiếng Việt chồng dấu thanh lên dấu phụ. <span style="font-size:12px; color:var(--ink-faint);">body · 16/400</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note note--jade">
+        <b>Vietnamese still constrains the typeface.</b><br>
+        The language stacks a diacritic <i>and</i> a tone mark on one vowel (ế ộ ữ) and uses đ.
+        Most chunky rounded display faces break on this. <b>Baloo 2</b> carries a full Vietnamese
+        subset and has the Duolingo silhouette; <b>Be Vietnam Pro</b> handles every score,
+        timer and transcript. This preview falls back to a system stack because the artifact
+        sandbox blocks font CDNs.
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 8. GAME SYSTEMS ===================== -->
+  <section class="sec">
+    <div class="sec__head">
+      <div class="label">Cơ chế trò chơi</div>
+      <h2>What is earned, and how</h2>
+      <p>The single hard rule: every visible reward comes from <b>showing up and trying</b>, never from scoring highly. That is what makes gamification safe on a graded assessment.</p>
+    </div>
+    <div class="inv">
+      <div class="inv__item"><div class="inv__name">★ XP — Điểm KN</div><div class="inv__desc">+50 a defense · +10 a follow-up · +20 same-day. Never for scoring well</div></div>
+      <div class="inv__item"><div class="inv__name">🔥 Streak — Chuỗi ngày</div><div class="inv__desc">Any defense on a given day. Never broken by a low score</div></div>
+      <div class="inv__item"><div class="inv__name">◈ Concept Map</div><div class="inv__desc">Unlocks at D2 ≥ 3.5. Never locked or removed once earned</div></div>
+      <div class="inv__item"><div class="inv__name">✦ Badges — Huy hiệu</div><div class="inv__desc">Milestones. Never for outscoring a peer</div></div>
+      <div class="inv__item"><div class="inv__name">▲ League — Giải đấu</div><div class="inv__desc">Weekly XP among ~20 anonymised peers. Never ranked on understanding</div></div>
+      <div class="inv__item"><div class="inv__name">🐃 Nghé</div><div class="inv__desc">idle · thinking · cheer · encourage · sleep. Never disappointed</div></div>
+    </div>
+  </section>
+
+  <!-- ===================== 9. ABSENT ===================== -->
+  <section class="sec" style="padding-bottom:72px;">
+    <div class="sec__head">
+      <div class="label">Cố ý không có</div>
+      <h2>Still deliberately absent</h2>
+      <p>Three v1 bans lifted (gamification, progress bar, peer comparison). These five are load-bearing.</p>
+    </div>
+    <div class="inv">
+      <div class="inv__item"><div class="inv__name">No hearts or lives</div><div class="inv__desc">A graded assessment must never be failable by a mechanic</div></div>
+      <div class="inv__item"><div class="inv__name">No red, anywhere</div><div class="inv__desc">Amber for “chưa vững”. Duolingo's results screens are celebratory too</div></div>
+      <div class="inv__item"><div class="inv__name">No integrity-signal UI</div><div class="inv__desc">Paste events and latency stored, never rendered</div></div>
+      <div class="inv__item"><div class="inv__name">No ranking by understanding</div><div class="inv__desc">Leagues rank XP — effort — only</div></div>
+      <div class="inv__item"><div class="inv__name">No gamification for lecturers</div><div class="inv__desc">Exactly as Duolingo for Schools does it</div></div>
+      <div class="inv__item"><div class="inv__name">No celebration during a probe</div><div class="inv__desc">The reward comes after the thinking</div></div>
+    </div>
+  </section>
+
+</div>

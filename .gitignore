@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Env / secrets — never commit
+.env
+.env.local
+.env.*.local
+
+# Test / build artifacts
+playwright-report/
+test-results/
+coverage/
+tsconfig.tsbuildinfo
+.tmp/
+
+# Editor / tool-local config
+.vscode/
+.idea/
+.claude/
+.omc/
+.omo/
+.codegraph/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Internal team documents — candid prep material, deliberately not public.
+# Share these directly with the team, not via this repository.
+GRASP-Team-Briefing.pdf
+GRASP-14-Day-Plan.pdf
+TEAM-AI-CONTEXT.md

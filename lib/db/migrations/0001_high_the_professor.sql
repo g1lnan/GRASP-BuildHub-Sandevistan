@@ -1,0 +1,1 @@
+ALTER TABLE "courses" ADD COLUMN "join_code_revoked_at" timestamp with time zone;

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "uq_sessions_in_progress_submission" ON "sessions" USING btree ("submission_id") WHERE "sessions"."status" = 'in_progress';
